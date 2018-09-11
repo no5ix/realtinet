@@ -10,7 +10,7 @@
 - realtinet = [kcpsess](https://github.com/no5ix/kcpsess) + (UDP Support For Muduo)
 - focus on Linux
 - C++11
-- used in [realtime-server](https://github.com/no5ix/realtime-server), [Video Preview 视频演示](https://hulinhong.com)
+- used in [realtime-server](https://github.com/no5ix/realtime-server) (A realtime dedicated game server for FPS / MOBA ), [Video Preview 视频演示](https://hulinhong.com)
 
 
 # QQ群
