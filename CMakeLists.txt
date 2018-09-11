@@ -50,10 +50,12 @@ if(UNIX)
     set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
 
 
-    include_directories(${PROJECT_SOURCE_DIR})
-    include_directories(${PROJECT_SOURCE_DIR}/realtinet/third)
+    include_directories(${PROJECT_SOURCE_DIR}/core)
+    include_directories(${PROJECT_SOURCE_DIR}/third)
 
-    add_subdirectory(realtinet)
+    add_subdirectory(core)
+    add_subdirectory(third/muduo)
+    add_subdirectory(third/kcpsess)
 
 else()
   	message(SEND_ERROR "You are on an unsupported platform! (Not Unix)")

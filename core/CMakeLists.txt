@@ -4,9 +4,6 @@ set (KCPSESS_LIB_NAME kcpsess)
 
 IF(UNIX)
 
-    add_subdirectory(third/muduo)
-    add_subdirectory(third/kcpsess)
-
     set(realtinet_SRCS
       UdpAcceptor.cpp
       UdpClient.cpp
