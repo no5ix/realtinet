@@ -1,0 +1,217 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{5CFC9111-8856-44F7-9933-A5613304EF75}</ProjectGuid>
+    <RootNamespace>realtinet</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <None Include="..\..\..\kcpsess\.gitignore" />
+    <None Include="..\..\..\kcpsess\README.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\..\..\kcpsess\CMakeLists.txt" />
+    <Text Include="..\..\..\mini_muduo\CMakeLists.txt" />
+    <Text Include="..\..\..\realtinet\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\kcpsess\ikcp.c" />
+    <ClCompile Include="..\..\..\kcpsess\TestKcpSessionClient.cpp" />
+    <ClCompile Include="..\..\..\kcpsess\TestKcpSessionServer.cpp" />
+    <ClCompile Include="..\..\..\mini_muduo\base\Condition.cc" />
+    <ClCompile Include="..\..\..\mini_muduo\base\CountDownLatch.cc" />
+    <ClCompile Include="..\..\..\mini_muduo\base\Date.cc" />
+    <ClCompile Include="..\..\..\mini_muduo\base\Exception.cc" />
+    <ClCompile Include="..\..\..\mini_muduo\base\Logging.cc" />
+    <ClCompile Include="..\..\..\mini_muduo\base\LogStream.cc" />
+    <ClCompile Include="..\..\..\mini_muduo\base\Thread.cc" />
+    <ClCompile Include="..\..\..\mini_muduo\base\ThreadPool.cc" />
+    <ClCompile Include="..\..\..\mini_muduo\base\Timestamp.cc" />
+    <ClCompile Include="..\..\..\mini_muduo\base\TimeZone.cc" />
+    <ClCompile Include="..\..\..\mini_muduo\net\Acceptor.cc" />
+    <ClCompile Include="..\..\..\mini_muduo\net\Buffer.cc" />
+    <ClCompile Include="..\..\..\mini_muduo\net\Channel.cc" />
+    <ClCompile Include="..\..\..\mini_muduo\net\Connector.cc" />
+    <ClCompile Include="..\..\..\mini_muduo\net\EventLoop.cc" />
+    <ClCompile Include="..\..\..\mini_muduo\net\EventLoopThread.cc" />
+    <ClCompile Include="..\..\..\mini_muduo\net\EventLoopThreadPool.cc" />
+    <ClCompile Include="..\..\..\mini_muduo\net\InetAddress.cc" />
+    <ClCompile Include="..\..\..\mini_muduo\net\Poller.cc" />
+    <ClCompile Include="..\..\..\mini_muduo\net\poller\DefaultPoller.cc" />
+    <ClCompile Include="..\..\..\mini_muduo\net\poller\EPollPoller.cc" />
+    <ClCompile Include="..\..\..\mini_muduo\net\poller\PollPoller.cc" />
+    <ClCompile Include="..\..\..\mini_muduo\net\Socket.cc" />
+    <ClCompile Include="..\..\..\mini_muduo\net\SocketsOps.cc" />
+    <ClCompile Include="..\..\..\mini_muduo\net\TcpClient.cc" />
+    <ClCompile Include="..\..\..\mini_muduo\net\TcpConnection.cc" />
+    <ClCompile Include="..\..\..\mini_muduo\net\TcpServer.cc" />
+    <ClCompile Include="..\..\..\mini_muduo\net\Timer.cc" />
+    <ClCompile Include="..\..\..\mini_muduo\net\TimerQueue.cc" />
+    <ClCompile Include="..\..\..\realtinet\UdpAcceptor.cpp" />
+    <ClCompile Include="..\..\..\realtinet\UdpClient.cpp" />
+    <ClCompile Include="..\..\..\realtinet\UdpConnection.cpp" />
+    <ClCompile Include="..\..\..\realtinet\UdpConnector.cpp" />
+    <ClCompile Include="..\..\..\realtinet\UdpServer.cpp" />
+    <ClCompile Include="..\..\..\realtinet\UdpSocketsOps.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\kcpsess\ikcp.h" />
+    <ClInclude Include="..\..\..\kcpsess\kcpsess.h" />
+    <ClInclude Include="..\..\..\mini_muduo\base\Atomic.h" />
+    <ClInclude Include="..\..\..\mini_muduo\base\Condition.h" />
+    <ClInclude Include="..\..\..\mini_muduo\base\copyable.h" />
+    <ClInclude Include="..\..\..\mini_muduo\base\CountDownLatch.h" />
+    <ClInclude Include="..\..\..\mini_muduo\base\CurrentThread.h" />
+    <ClInclude Include="..\..\..\mini_muduo\base\Date.h" />
+    <ClInclude Include="..\..\..\mini_muduo\base\Exception.h" />
+    <ClInclude Include="..\..\..\mini_muduo\base\Logging.h" />
+    <ClInclude Include="..\..\..\mini_muduo\base\LogStream.h" />
+    <ClInclude Include="..\..\..\mini_muduo\base\Mutex.h" />
+    <ClInclude Include="..\..\..\mini_muduo\base\noncopyable.h" />
+    <ClInclude Include="..\..\..\mini_muduo\base\StringPiece.h" />
+    <ClInclude Include="..\..\..\mini_muduo\base\Thread.h" />
+    <ClInclude Include="..\..\..\mini_muduo\base\ThreadLocal.h" />
+    <ClInclude Include="..\..\..\mini_muduo\base\ThreadLocalSingleton.h" />
+    <ClInclude Include="..\..\..\mini_muduo\base\ThreadPool.h" />
+    <ClInclude Include="..\..\..\mini_muduo\base\Timestamp.h" />
+    <ClInclude Include="..\..\..\mini_muduo\base\TimeZone.h" />
+    <ClInclude Include="..\..\..\mini_muduo\base\Types.h" />
+    <ClInclude Include="..\..\..\mini_muduo\base\WeakCallback.h" />
+    <ClInclude Include="..\..\..\mini_muduo\net\Acceptor.h" />
+    <ClInclude Include="..\..\..\mini_muduo\net\Buffer.h" />
+    <ClInclude Include="..\..\..\mini_muduo\net\Callbacks.h" />
+    <ClInclude Include="..\..\..\mini_muduo\net\Channel.h" />
+    <ClInclude Include="..\..\..\mini_muduo\net\Connector.h" />
+    <ClInclude Include="..\..\..\mini_muduo\net\Endian.h" />
+    <ClInclude Include="..\..\..\mini_muduo\net\EventLoop.h" />
+    <ClInclude Include="..\..\..\mini_muduo\net\EventLoopThread.h" />
+    <ClInclude Include="..\..\..\mini_muduo\net\EventLoopThreadPool.h" />
+    <ClInclude Include="..\..\..\mini_muduo\net\InetAddress.h" />
+    <ClInclude Include="..\..\..\mini_muduo\net\Poller.h" />
+    <ClInclude Include="..\..\..\mini_muduo\net\poller\EPollPoller.h" />
+    <ClInclude Include="..\..\..\mini_muduo\net\poller\PollPoller.h" />
+    <ClInclude Include="..\..\..\mini_muduo\net\Socket.h" />
+    <ClInclude Include="..\..\..\mini_muduo\net\SocketsOps.h" />
+    <ClInclude Include="..\..\..\mini_muduo\net\TcpClient.h" />
+    <ClInclude Include="..\..\..\mini_muduo\net\TcpConnection.h" />
+    <ClInclude Include="..\..\..\mini_muduo\net\TcpServer.h" />
+    <ClInclude Include="..\..\..\mini_muduo\net\Timer.h" />
+    <ClInclude Include="..\..\..\mini_muduo\net\TimerId.h" />
+    <ClInclude Include="..\..\..\mini_muduo\net\TimerQueue.h" />
+    <ClInclude Include="..\..\..\realtinet\any.h" />
+    <ClInclude Include="..\..\..\realtinet\UdpAcceptor.h" />
+    <ClInclude Include="..\..\..\realtinet\UdpCallbacks.h" />
+    <ClInclude Include="..\..\..\realtinet\UdpClient.h" />
+    <ClInclude Include="..\..\..\realtinet\UdpConnection.h" />
+    <ClInclude Include="..\..\..\realtinet\UdpConnector.h" />
+    <ClInclude Include="..\..\..\realtinet\UdpServer.h" />
+    <ClInclude Include="..\..\..\realtinet\UdpSocketsOps.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
