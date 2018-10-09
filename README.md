@@ -6,12 +6,11 @@
 
 # About This 
 
+- RUDP + FEC
 - combine [kcp](https://github.com/skywind3000/kcp) with [muduo](https://github.com/chenshuo/muduo). 
 - realtinet = [kcpsess](https://github.com/no5ix/kcpsess) + (UDP support for muduo)
 - focus on Linux
 - Multi-Thread
-- RUDP
-- C++11
 - used in [realtime-server](https://github.com/no5ix/realtime-server) (A realtime dedicated game server for FPS / MOBA ), [Video Preview 视频演示](https://hulinhong.com)
 
 
