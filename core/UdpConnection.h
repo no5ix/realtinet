@@ -142,7 +142,6 @@ namespace muduo
 
 			// kcp
 			std::unique_ptr<kcpsess::KcpSession> kcpSession_;
-			kcpsess::KcpSession::InputData kcpsessInputData_;
 		};
 
 		typedef std::shared_ptr<UdpConnection> UdpConnectionPtr;

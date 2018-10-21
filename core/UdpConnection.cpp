@@ -146,7 +146,7 @@ KcpSession::InputData UdpConnection::DoRecv()
 		LOG_SYSERR << "UdpConnection::handleRead";
 		handleError();
 	}
-	return kcpsessInputData_.SetAndReturnSelf(packetBuf_, n);
+	return KcpSession::InputData(packetBuf_, n);
 }
 
 void UdpConnection::sendInLoop(const void* data, size_t len)
