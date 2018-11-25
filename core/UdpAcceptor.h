@@ -5,8 +5,9 @@
 #include <functional>
 #include <map>
 
-#include <muduo/net/Channel.h>
-#include <muduo/net/Socket.h>
+#include <net/InetAddress.h>
+#include <net/Channel.h>
+#include <net/Socket.h>
 
 namespace muduo
 {
@@ -52,7 +53,7 @@ namespace muduo
 			bool listenning_;
 			uint16_t listenPort_;
 
-			typedef std::map< InetAddress, UdpConnectorPtr > InetAddressToUdpConnectorMap;
+			typedef std::map<InetAddress, UdpConnectorPtr> InetAddressToUdpConnectorMap;
 			InetAddressToUdpConnectorMap peerAddrToUdpConnectors_;
 		};
 

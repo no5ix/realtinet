@@ -11,8 +11,8 @@
 #ifndef UDP_MUDUO_NET_CONNECTOR_H
 #define UDP_MUDUO_NET_CONNECTOR_H
 
-#include <muduo/net/InetAddress.h>
-#include <muduo/net/Socket.h>
+#include <net/InetAddress.h>
+#include <net/Socket.h>
 
 #include <functional>
 #include <memory>

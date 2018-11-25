@@ -13,7 +13,7 @@
 
 
 // "License": Public Domain
-// I, Mathias Panzenböck, place this file hereby into the public domain. Use it at your own risk for whatever you like.
+// I, Mathias Panzenb��¸£��¸���ck, place this file hereby into the public domain. Use it at your own risk for whatever you like.
 // In case there are jurisdictions that don't support putting things in the public domain you can also consider it to
 // be "dual licensed" under the BSD, MIT and Apache licenses, if you want to. This code is trivial anyway. Consider it
 // an example on how to get the endian conversion functions on different platforms.
@@ -661,29 +661,32 @@ public:
 	enum RoleTypeE { kSrv, kCli };
 	enum TransmitModeE { kUnreliable = 88, kReliable };
 	enum PktTypeE { kSyn = 66, kAck, kPsh, kFin, kRst };
-	enum FecStateE { kFecEnable = 233, kFecDisable };
+	// enum FecStateE { kFecEnable = 233, kFecDisable };
 
 	typedef std::function<void(const void* pendingSendData, int pendingSendDataLen)> OutputFunction;
 	typedef std::function<InputData()> InputFunction;
-	typedef std::function<IUINT32()> CurrentTimeCallBack;
+	typedef std::function<IUINT32()> CurrentTimestampCallBack;
+
 
 public:
 	KcpSession(const RoleTypeE role,
 		const OutputFunction& outputFunc,
 		const InputFunction& inputFunc,
-		const CurrentTimeCallBack& currentTimeCb)
+		const CurrentTimestampCallBack& currentTimestampCb)
 		:
 		role_(role),
 		conv_(0),
 		outputFunc_(outputFunc),
 		inputFunc_(inputFunc),
-		curTimeCb_(currentTimeCb),
+		curTsCb_(currentTimestampCb),
 		kcp_(nullptr),
 		kcpConnState_(kConnecting),
 		fec_(std::bind(&KcpSession::DoRecv, this, std::placeholders::_1,
 			std::placeholders::_2, std::placeholders::_3)),
+		nextUpdateTs_(0),
 		sndWnd_(128),
 		rcvWnd_(128),
+		maxWaitSndCount_(2 * sndWnd_),
 		nodelay_(1),
 		interval_(10),
 		resend_(1),
@@ -693,7 +696,25 @@ public:
 		rx_minrto_(10)
 	{}
 
-	void Update() { if (kcp_) ikcp_update(kcp_, curTimeCb_()); }
+	// for Application-level Congestion Control
+	bool CheckCanSend() const { return kcp_ ? ikcp_waitsnd(kcp_) < maxWaitSndCount_ : true; }
+
+	// update then return next update timestamp
+	IUINT32 Update(bool mustUpdateFlag = false)
+	{
+		auto curTimestamp = curTsCb_();
+		if (kcp_)
+		{
+			if (curTimestamp >= nextUpdateTs_ || mustUpdateFlag)
+			{
+				ikcp_update(kcp_, curTimestamp);
+				nextUpdateTs_ = ikcp_check(kcp_, curTimestamp);
+			}
+			return nextUpdateTs_;
+		}
+		else // not yet connected
+			return curTimestamp + interval_;
+	}
 
 	// returns below zero for error
 	int Send(const void* data, int len, TransmitModeE dataType = kReliable)
@@ -725,7 +746,7 @@ public:
 					if (sendRet < 0)
 						return sendRet; // ikcp_send err
 					else
-						Update();
+						Update(true);
 					sndQueueBeforeConned_.pop();
 				}
 
@@ -733,7 +754,7 @@ public:
 				if (result < 0)
 					return result; // ikcp_send err
 				else
-					Update();
+					Update(true);
 			}
 		}
 		return 0;
@@ -755,22 +776,26 @@ public:
 		return fec_.Input(data, len, &inputBuf_);
 	}
 
+
 public:
+	ikcpcb* GetKcp() const { return kcp_; }
+
 	bool IsKcpConnected() const { return kcpConnState_ == kConnected; }
 
 	// should set before Send()
-	void SetKcpConfig(
-		const int sndWnd, const int rcvWnd, const int nodelay,
-		const int interval, const int resend, const int nc,
-		const int streamMode, const int mtu, const int rx_minrto)
+	void SetKcpConfig(const int sndWnd = 128, const int rcvWnd = 128, const int maxWaitSndCount = 512,
+		const int nodelay = 1, const int interval = 10, const int resend = 1, const int nc = 1,
+		const int streamMode = 0, const int mtu = 300, const int rx_minrto = 10)
 	{
 		assert(mtu <= kMaxSeparatePktSize);
-		sndWnd_ = sndWnd; rcvWnd_ = rcvWnd; nodelay_ = nodelay;
-		interval_ = interval; resend_ = resend; nc_ = nc;
+		assert(maxWaitSndCount > sndWnd);
+		sndWnd_ = sndWnd; rcvWnd_ = rcvWnd; maxWaitSndCount_ = maxWaitSndCount;
+		nodelay_ = nodelay; interval_ = interval; resend_ = resend; nc_ = nc;
 		streamMode_ = streamMode; mtu_ = mtu; rx_minrto_ = rx_minrto;
 	}
 
 	~KcpSession() { if (kcp_) ikcp_release(kcp_); }
+
 
 private:
 	friend void Fec::Output(Buf*);
@@ -826,7 +851,10 @@ private:
 				{
 					int result = ikcp_input(kcp_, inputBuf_.peek(), readableLen);
 					if (result == 0)
+					{
+						Update(true);
 						len = KcpRecv(data); // if err, -1, -2, -3
+					}
 					else // if (result < 0)
 						len = result - 3; // ikcp_input err, -4, -5, -6
 				}
@@ -933,16 +961,18 @@ private:
 	ConnectionStateE kcpConnState_;
 	Buf outputBuf_;
 	Buf inputBuf_;
-	CurrentTimeCallBack curTimeCb_;
+	CurrentTimestampCallBack curTsCb_;
 	IUINT32 conv_;
 	RoleTypeE role_;
 	std::queue<std::string> sndQueueBeforeConned_;
 	Fec fec_;
+	IUINT32 nextUpdateTs_;
 
 private:
 	// kcp config...
 	int sndWnd_;
 	int rcvWnd_;
+	int maxWaitSndCount_;
 	int nodelay_;
 	int interval_;
 	int resend_;

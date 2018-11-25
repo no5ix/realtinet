@@ -1,10 +1,10 @@
 #include "UdpServer.h"
 
-#include <muduo/base/Logging.h>
+#include <base/Logging.h>
 #include "UdpAcceptor.h"
-#include <muduo/net/EventLoop.h>
-#include <muduo/net/EventLoopThreadPool.h>
-#include <muduo/net/SocketsOps.h>
+#include <net/EventLoop.h>
+#include <net/EventLoopThreadPool.h>
+#include <net/SocketsOps.h>
 
 #include "UdpConnector.h"
 
@@ -25,6 +25,9 @@ UdpServer::UdpServer( EventLoop* loop,
 	threadPool_( new EventLoopThreadPool( loop, name_ ) ),
 	connectionCallback_( UdpDefaultConnectionCallback ),
 	messageCallback_( UdpDefaultMessageCallback ),
+#ifdef _WIN32
+	started_(false),
+#endif
 	nextConnId_( 1 )
 {
 	acceptor_->setNewConnectionCallback(
@@ -53,6 +56,7 @@ void UdpServer::setThreadNum( int numThreads )
 
 void UdpServer::start()
 {
+#ifndef _WIN32
 	if ( started_.getAndSet( 1 ) == 0 )
 	{
 		threadPool_->start( threadInitCallback_ );
@@ -61,6 +65,15 @@ void UdpServer::start()
 		loop_->runInLoop(
 			std::bind( &UdpAcceptor::listen, get_pointer( acceptor_ ) ) );
 	}
+#else
+	if (!started_)
+	{
+		started_ = true;
+		threadPool_->start(threadInitCallback_);
+		loop_->runInLoop(
+			std::bind(&UdpAcceptor::listen, get_pointer(acceptor_)));
+	}
+#endif
 }
 
 void UdpServer::newConnection( Socket* connectedSocket,

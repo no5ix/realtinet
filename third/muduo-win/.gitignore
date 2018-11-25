@@ -1,0 +1,3 @@
+*.bak
+./src/build/*
+/src/build/

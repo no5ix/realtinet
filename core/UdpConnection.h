@@ -11,12 +11,13 @@
 #ifndef UDP_MUDUO_NET_TCPCONNECTION_H
 #define UDP_MUDUO_NET_TCPCONNECTION_H
 
-#include <muduo/base/StringPiece.h>
-#include <muduo/base/Types.h>
+
+#include <base/StringPiece.h>
+#include <base/Types.h>
 #include "UdpCallbacks.h"
-#include <muduo/net/Callbacks.h>
-#include <muduo/net/Buffer.h>
-#include <muduo/net/InetAddress.h>
+#include <net/Callbacks.h>
+#include <net/Buffer.h>
+#include <net/InetAddress.h>
 
 #include <memory>
 
@@ -62,6 +63,13 @@ namespace muduo
 				//kcpsess::KcpSession::TransmitModeE transmitMode = kcpsess::KcpSession::TransmitModeE::kUnreliable);
 				kcpsess::KcpSession::TransmitModeE transmitMode = kcpsess::KcpSession::TransmitModeE::kReliable);
 
+			void send(const StringPiece& message)
+			{ send(message.data(), message.size()); }
+
+			// FIXME efficiency!!!
+			void send(Buffer* buf)
+			{ send(buf->peek(), buf->readableBytes()); }
+
 			void KcpSessionUpdate();
 
 			void DoSend(const void* message, int len);
@@ -70,7 +78,7 @@ namespace muduo
 			void shutdown(); // NOT thread safe, no simultaneous calling
 							 // void shutdownAndForceCloseAfter(double seconds); // NOT thread safe, no simultaneous calling
 			void forceClose();
-			void forceCloseWithDelay( double seconds );
+			//void forceCloseWithDelay( double seconds );
 
 			// reading or not
 			void startRead();
@@ -139,6 +147,8 @@ namespace muduo
 			static const size_t kPacketBufSize = 1500;
 			char packetBuf_[kPacketBufSize];
 			realtinet::any context_;
+
+			Buffer inputBuffer_;
 
 			// kcp
 			std::unique_ptr<kcpsess::KcpSession> kcpSession_;

@@ -2,10 +2,10 @@
 
 #include "UdpClient.h"
 
-#include <muduo/base/Logging.h>
+#include <base/Logging.h>
 #include "UdpConnector.h"
-#include <muduo/net/EventLoop.h>
-#include <muduo/net/SocketsOps.h>
+#include <net/EventLoop.h>
+#include <net/SocketsOps.h>
 
 #include <stdio.h>  // snprintf
 

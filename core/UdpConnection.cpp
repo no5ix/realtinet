@@ -8,12 +8,12 @@
 
 #include "UdpConnection.h"
 
-#include <muduo/base/Logging.h>
-#include <muduo/base/WeakCallback.h>
-#include <muduo/net/Channel.h>
-#include <muduo/net/EventLoop.h>
-#include <muduo/net/Socket.h>
-#include <muduo/net/SocketsOps.h>
+#include <base/Logging.h>
+//#include <base/WeakCallback.h>
+#include <net/Channel.h>
+#include <net/EventLoop.h>
+#include <net/Socket.h>
+#include <net/SocketsOps.h>
 #include "UdpSocketsOps.h"
 
 #include <errno.h>
@@ -92,12 +92,26 @@ void UdpConnection::send(const void* data, int len,
 		LOG_ERROR << "kcpSession send failed";
 }
 
+//void UdpConnection::handleRead(Timestamp receiveTime)
+//{
+//	loop_->assertInLoopThread();
+//	int n = 0;
+//	while (kcpSession_->Recv(packetBuf_, n))
+//	{
+//		if (n < 0)
+//			LOG_ERROR << "kcpSession Recv() Error, Recv() = " << n;
+//		else if (n > 0)
+//			messageCallback_(shared_from_this(), packetBuf_, n, receiveTime);
+//	}
+//}
+
 void UdpConnection::handleRead(Timestamp receiveTime)
 {
 	loop_->assertInLoopThread();
 	int n = 0;
-	while (kcpSession_->Recv(packetBuf_, n))
+	while (kcpSession_->Recv(inputBuffer_.beginWrite(), n))
 	{
+		inputBuffer_.hasWritten(n);
 		if (n < 0)
 			LOG_ERROR << "kcpSession Recv() Error, Recv() = " << n;
 		else if (n > 0)
@@ -190,17 +204,17 @@ void UdpConnection::forceClose()
 	}
 }
 
-void UdpConnection::forceCloseWithDelay(double seconds)
-{
-	if (state_ == kConnected || state_ == kDisconnecting)
-	{
-		setState(kDisconnecting);
-		loop_->runAfter(
-			seconds,
-			makeWeakCallback(shared_from_this(),
-				&UdpConnection::forceClose));  // not forceCloseInLoop to avoid race condition
-	}
-}
+//void UdpConnection::forceCloseWithDelay(double seconds)
+//{
+//	if (state_ == kConnected || state_ == kDisconnecting)
+//	{
+//		setState(kDisconnecting);
+//		loop_->runAfter(
+//			seconds,
+//			makeWeakCallback(shared_from_this(),
+//				&UdpConnection::forceClose));  // not forceCloseInLoop to avoid race condition
+//	}
+//}
 
 void UdpConnection::forceCloseInLoop()
 {

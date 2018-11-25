@@ -2,8 +2,11 @@
 #ifndef UDP_MUDUO_NET_TCPSERVER_H
 #define UDP_MUDUO_NET_TCPSERVER_H
 
-#include <muduo/base/Atomic.h>
-#include <muduo/base/Types.h>
+#ifndef _WIN32
+#include <base/Atomic.h>
+#endif
+
+#include <base/Types.h>
 #include "UdpConnection.h"
 
 #include <map>
@@ -99,7 +102,11 @@ namespace muduo
 			UdpMessageCallback messageCallback_;
 			UdpWriteCompleteCallback writeCompleteCallback_;
 			ThreadInitCallback threadInitCallback_;
+		#ifndef _WIN32
 			AtomicInt32 started_;
+		#else
+			bool started_;
+		#endif
 			// always in loop thread
 			int nextConnId_;
 			ConnectionMap connections_;

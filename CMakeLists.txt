@@ -52,6 +52,7 @@ if(UNIX)
 
     include_directories(${PROJECT_SOURCE_DIR}/core)
     include_directories(${PROJECT_SOURCE_DIR}/third)
+    include_directories(${PROJECT_SOURCE_DIR}/third/muduo)
 
     add_subdirectory(core)
     add_subdirectory(third/muduo)
