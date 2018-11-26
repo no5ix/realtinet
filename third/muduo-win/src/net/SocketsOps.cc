@@ -198,7 +198,7 @@ ssize_t sockets::read(int sockfd, void *buf, int count)
 
 ssize_t sockets::write(int sockfd, const void* buf, int count)
 {
-	return send(sockfd,static_cast<const char*>(buf), count,0);
+	return send(sockfd,static_cast<const char*>(buf), count, 0);
 }
 
 
