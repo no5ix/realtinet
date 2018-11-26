@@ -70,6 +70,7 @@ void UdpServer::start()
 	{
 		started_ = true;
 		threadPool_->start(threadInitCallback_);
+		assert(!acceptor_->listenning());
 		loop_->runInLoop(
 			std::bind(&UdpAcceptor::listen, get_pointer(acceptor_)));
 	}

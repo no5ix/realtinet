@@ -100,8 +100,8 @@ private:
 	ConnectionListPtr connections_;
 };
 
-int main(int argc, char* argv[])
-//int TcpChatServer_main(int argc, char* argv[])
+//int main(int argc, char* argv[])
+int TcpChatServer_main(int argc, char* argv[])
 //int main()
 {
 	//LOG_INFO << "pid = " << getpid();

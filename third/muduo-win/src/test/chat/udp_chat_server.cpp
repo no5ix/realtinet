@@ -102,8 +102,8 @@ private:
 	ConnectionListPtr connections_;
 };
 
-int UdpChatServer_main(int argc, char* argv[])
-//int main()
+int main(int argc, char* argv[])
+//int UdpChatServer_main(int argc, char* argv[])
 {
 	//LOG_INFO << "pid = " << getpid();
 	LOG_INFO << "ThreadId = " << getCurrentThreadId();

@@ -106,7 +106,7 @@ int TcpChatClient_main(int argc, char* argv[])
 	{
 		EventLoopThread loopThread;
 		//uint16_t port = static_cast<uint16_t>(atoi(argv[2]));
-		uint16_t port =2000;
+		uint16_t port = 2000;
 		InetAddress serverAddr("127.0.0.1", port);
 
 		TcpChatClient client(loopThread.startLoop(), serverAddr);

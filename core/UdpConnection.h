@@ -149,6 +149,7 @@ namespace muduo
 			realtinet::any context_;
 
 			Buffer inputBuffer_;
+			kcpsess::Buf kcpsessRcvBuf_;
 
 			// kcp
 			std::unique_ptr<kcpsess::KcpSession> kcpSession_;

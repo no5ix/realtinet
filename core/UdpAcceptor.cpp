@@ -48,6 +48,10 @@ void UdpAcceptor::listen()
 	loop_->assertInLoopThread();
 	listenning_ = true;
 
+//#ifdef _WIN32
+//	acceptSocket_.listen();
+//#endif
+
 	acceptChannel_.enableReading();
 }
 

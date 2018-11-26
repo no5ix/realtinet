@@ -103,7 +103,7 @@ void setNonBlock(int sockfd)
 
 int sockets::createUdpNonblockingOrDie(int family)
 {
-	int sockfd = socket(family, SOCK_STREAM, 0);
+	int sockfd = socket(family, SOCK_DGRAM, 0);
 	int saveErrno = GetLastError();
 	if (sockfd < 0)
 	{

@@ -58,7 +58,8 @@ void Socket::setReusePort(bool on)
 #else
 	if (on)
 	{
-		LOG_ERROR << "SO_REUSEPORT is not supported.";
+		//LOG_ERROR << "SO_REUSEPORT is not supported.";
+		;
 	}
 #endif
 }

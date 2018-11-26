@@ -31,10 +31,15 @@ void muduo::net::UdpDefaultConnectionCallback(const UdpConnectionPtr& conn)
 	// do not call conn->forceClose(), because some users want to register message callback only.
 }
 
-void muduo::net::UdpDefaultMessageCallback(const UdpConnectionPtr&,
-	char*,
-	size_t,
-	Timestamp)
+//void muduo::net::UdpDefaultMessageCallback(const UdpConnectionPtr&,
+//	char*,
+//	size_t,
+//	Timestamp)
+//{}
+
+void muduo::net::UdpDefaultMessageCallback(const UdpConnectionPtr& conn,
+	Buffer* buffer,
+	Timestamp recvTime)
 {}
 
 UdpConnection::UdpConnection(EventLoop* loop,
@@ -109,13 +114,18 @@ void UdpConnection::handleRead(Timestamp receiveTime)
 {
 	loop_->assertInLoopThread();
 	int n = 0;
-	while (kcpSession_->Recv(inputBuffer_.beginWrite(), n))
+	while (kcpSession_->Recv(&kcpsessRcvBuf_, n))
 	{
-		inputBuffer_.hasWritten(n);
+		//inputBuffer_.hasWritten(n);
 		if (n < 0)
 			LOG_ERROR << "kcpSession Recv() Error, Recv() = " << n;
 		else if (n > 0)
-			messageCallback_(shared_from_this(), packetBuf_, n, receiveTime);
+		{
+			inputBuffer_.append(kcpsessRcvBuf_.peek(), n);
+			kcpsessRcvBuf_.retrieveAll();
+			messageCallback_(shared_from_this(), &inputBuffer_, receiveTime);
+			//messageCallback_(shared_from_this(), packetBuf_, n, receiveTime);
+		}
 	}
 }
 

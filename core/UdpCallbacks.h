@@ -32,16 +32,26 @@ namespace muduo
 		typedef std::function<void( const UdpConnectionPtr& )> UdpWriteCompleteCallback;
 		typedef std::function<void( const UdpConnectionPtr&, size_t )> UdpHighWaterMarkCallback;
 
-		// the data has been read to (buf, len)
-		typedef std::function<void( const UdpConnectionPtr&,
-			char*,
-			size_t,
-			Timestamp )> UdpMessageCallback;
+		//// the data has been read to (buf, len)
+		//typedef std::function<void(const UdpConnectionPtr&,
+		//	char*,
+		//	size_t,
+		//	Timestamp)> UdpMessageCallback;
 
-		void UdpDefaultConnectionCallback( const UdpConnectionPtr& conn );
+		//void UdpDefaultConnectionCallback(const UdpConnectionPtr& conn);
+		//void UdpDefaultMessageCallback(const UdpConnectionPtr& conn,
+		//	char* buf,
+		//	size_t bufBytes,
+		//	Timestamp recvTime);
+
+		// the data has been read to (buf, len)
+		typedef std::function<void(const UdpConnectionPtr&,
+			Buffer*,
+			Timestamp)> UdpMessageCallback;
+
+		void UdpDefaultConnectionCallback(const UdpConnectionPtr& conn);
 		void UdpDefaultMessageCallback(const UdpConnectionPtr& conn,
-			char* buf,
-			size_t bufBytes,
+			Buffer* buffer,
 			Timestamp recvTime);
 	}
 }
