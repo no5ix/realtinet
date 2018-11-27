@@ -47,7 +47,8 @@ namespace muduo
 				Socket* connectedSocket,
 				int ConnectionId,
 				const InetAddress& localAddr,
-				const InetAddress& peerAddr);
+				const InetAddress& peerAddr,
+				Buffer* firstRcvBuf = nullptr);
 
 			~UdpConnection();
 
@@ -119,7 +120,7 @@ namespace muduo
 			{ return connId_; }
 
 		private:
-			void handleRead( Timestamp receiveTime );
+			void handleRead( Timestamp receiveTime);
 			void handleClose();
 			void handleError();
 			// void sendInLoop(string&& message);
@@ -157,6 +158,7 @@ namespace muduo
 			// kcp
 			std::unique_ptr<kcpsess::KcpSession> kcpSession_;
 			TimerId curKcpsessUpTimerId_;
+			Buffer* firstRcvBuf_;
 		};
 
 		typedef std::shared_ptr<UdpConnection> UdpConnectionPtr;

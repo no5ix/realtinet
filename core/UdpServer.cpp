@@ -31,7 +31,7 @@ UdpServer::UdpServer( EventLoop* loop,
 	nextConnId_( 1 )
 {
 	acceptor_->setNewConnectionCallback(
-		std::bind( &UdpServer::newConnection, this, _1, _2 ) );
+		std::bind( &UdpServer::newConnection, this, _1, _2, _3 ) );
 }
 
 UdpServer::~UdpServer()
@@ -78,7 +78,7 @@ void UdpServer::start()
 }
 
 void UdpServer::newConnection( Socket* connectedSocket,
-	const InetAddress& peerAddr )
+	const InetAddress& peerAddr, Buffer* firstRcvBuf )
 {
 	loop_->assertInLoopThread();
 	EventLoop* ioLoop = threadPool_->getNextLoop();
@@ -96,7 +96,7 @@ void UdpServer::newConnection( Socket* connectedSocket,
 	// FIXME poll with zero timeout to double confirm the new connection
 	// FIXME use make_shared if necessary
 	UdpConnectionPtr conn( new UdpConnection( kcpsess::KcpSession::RoleTypeE::kSrv, ioLoop,
-		connName, connectedSocket, nextConnId_, localAddr, peerAddr ) );
+		connName, connectedSocket, nextConnId_, localAddr, peerAddr, firstRcvBuf ) );
 
 	++nextConnId_;
 

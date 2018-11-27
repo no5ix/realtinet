@@ -4,6 +4,7 @@
 #include <base/Logging.h>
 #include <base/Types.h>
 #include <net/Endian.h>
+#include <net/Buffer.h>
 
 #include <errno.h>
 #include <fcntl.h>
@@ -119,7 +120,7 @@ int sockets::createUdpNonblockingOrDie(int family)
 //////////
 // for udp socket
 /////////
-int sockets::recvfrom(int sockfd, struct sockaddr_in6* addr)
+int sockets::recvfrom(int sockfd, struct sockaddr_in6* addr, Buffer *recvfromBuf)
 {
 	const uint16_t MAX_PACKET_BYTE_LENGTH = 512;
 
@@ -133,6 +134,7 @@ int sockets::recvfrom(int sockfd, struct sockaddr_in6* addr)
 		0,
 		sockaddr_cast(addr),
 		&addrlen));
+
 
 	if (readByteCount < 0)
 	{
@@ -149,5 +151,6 @@ int sockets::recvfrom(int sockfd, struct sockaddr_in6* addr)
 				break;
 		}
 	}
+	recvfromBuf->append(packetMem, readByteCount);
 	return readByteCount;
 }

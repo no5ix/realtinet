@@ -880,6 +880,8 @@ public:
 	public:
 		ikcpcb* GetKcp() const { return kcp_; }
 
+		RoleTypeE GetRoleType() const{ return role_; }
+
 		bool IsKcpConnected() const { return kcpConnState_ == kConnected; }
 
 		// should set before Send()

@@ -8,6 +8,7 @@
 #include <net/InetAddress.h>
 #include <net/Channel.h>
 #include <net/Socket.h>
+#include <net/Buffer.h>
 
 namespace muduo
 {
@@ -24,8 +25,7 @@ namespace muduo
 		{
 		public:
 			typedef std::function<void( 
-				Socket* connectedSocket, 
-				const InetAddress& )> NewConnectionCallback;
+				Socket* connectedSocket, const InetAddress&, Buffer* )> NewConnectionCallback;
 
 			UdpAcceptor( EventLoop* loop, const InetAddress& listenAddr, bool reuseport );
 			~UdpAcceptor();
@@ -56,6 +56,8 @@ namespace muduo
 
 			typedef std::map<InetAddress, UdpConnectorPtr> InetAddressToUdpConnectorMap;
 			InetAddressToUdpConnectorMap peerAddrToUdpConnectors_;
+
+			Buffer recvfromBuf_;
 		};
 
 	}

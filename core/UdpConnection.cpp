@@ -48,7 +48,8 @@ UdpConnection::UdpConnection(const kcpsess::KcpSession::RoleTypeE role,
 	Socket* connectedSocket,
 	int ConnectionId,
 	const InetAddress& localAddr,
-	const InetAddress& peerAddr)
+	const InetAddress& peerAddr,
+	Buffer* firstRcvBuf /*= nullptr*/)
 	:
 	loop_(CHECK_NOTNULL(loop)),
 	name_(nameArg),
@@ -59,6 +60,7 @@ UdpConnection::UdpConnection(const kcpsess::KcpSession::RoleTypeE role,
 	channel_(new Channel(loop, socket_->fd())),
 	localAddr_(localAddr),
 	peerAddr_(peerAddr),
+	firstRcvBuf_(firstRcvBuf),
 	kcpSession_(new KcpSession(
 		role,
 		std::bind(&UdpConnection::DoSend, this, _1, _2),
@@ -169,15 +171,26 @@ void UdpConnection::DoSend(const void* data, int len)
 
 KcpSession::InputData UdpConnection::DoRecv()
 {
-	int n = sockets::read(channel_->fd(), static_cast<void*>(packetBuf_), kPacketBufSize);
-	if (n == 0)
+	int n = 0;
+	if (firstRcvBuf_)
 	{
-		handleClose();
+		n = firstRcvBuf_->readableBytes();
+		::memcpy(packetBuf_, firstRcvBuf_->peek(), n);
+		firstRcvBuf_->retrieveAll();
+		firstRcvBuf_ = nullptr;
 	}
-	else if (n < 0)
+	else
 	{
-		LOG_SYSERR << "UdpConnection::handleRead";
-		handleError();
+		n = sockets::read(channel_->fd(), static_cast<void*>(packetBuf_), kPacketBufSize);
+		if (n == 0)
+		{
+			handleClose();
+		}
+		else if (n < 0)
+		{
+			LOG_SYSERR << "UdpConnection::handleRead";
+			handleError();
+		}
 	}
 	return KcpSession::InputData(packetBuf_, n);
 }
@@ -301,6 +314,8 @@ void UdpConnection::connectEstablished()
 	channel_->enableReading();
 
 	connectionCallback_(shared_from_this());
+	if (kcpSession_->GetRoleType() == KcpSession::RoleTypeE::kSrv)
+		handleRead(Timestamp::now());
 }
 
 void UdpConnection::connectDestroyed()

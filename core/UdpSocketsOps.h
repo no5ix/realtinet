@@ -16,15 +16,18 @@ namespace muduo
 {
 namespace net
 {
+class Buffer;
 namespace sockets
 {
+
+
 #ifndef _WIN32
 int createUdpNonblockingOrDie( sa_family_t family );
 #else
 int createUdpNonblockingOrDie(int family);
 #endif
 
-int recvfrom( int sockfd, struct sockaddr_in6* addr );
+int recvfrom(int sockfd, struct sockaddr_in6* addr, Buffer *recvfromBuf);
 }
 }
 }
