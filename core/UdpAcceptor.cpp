@@ -25,7 +25,8 @@ UdpAcceptor::UdpAcceptor(EventLoop* loop, const InetAddress& listenAddr, bool re
 	acceptSocket_(sockets::createUdpNonblockingOrDie(listenAddr.family())),
 	acceptChannel_(loop, acceptSocket_.fd()),
 	listenning_(false),
-	listenPort_(listenAddr.toPort())
+	listenPort_(listenAddr.toPort()),
+	listenAddr_(listenAddr)
 {
 	acceptSocket_.setReuseAddr(true);
 	acceptSocket_.setReusePort(reuseport);
@@ -64,8 +65,7 @@ void UdpAcceptor::handleRead()
 	//struct sockaddr_in addr;
 	//bzero( &addr, sizeof addr );
 	memset(&addr, 0, sizeof(addr));
-	//int readByteCount = sockets::recvfrom(acceptSocket_.fd(), &addr);
-	int readByteCount = 0;
+	int readByteCount = sockets::recvfrom(acceptSocket_.fd(), &addr);
 
 	if (readByteCount >= 0)
 	{
@@ -75,7 +75,7 @@ void UdpAcceptor::handleRead()
 		if (peerAddrToUdpConnectors_.find(peerAddr)
 			== peerAddrToUdpConnectors_.end()) // check whether is connecting
 		{
-			UdpConnectorPtr newUdpConnector(new UdpConnector(loop_, peerAddr, listenPort_));
+			UdpConnectorPtr newUdpConnector(new UdpConnector(loop_, peerAddr, listenAddr_));
 			peerAddrToUdpConnectors_[peerAddr] = newUdpConnector;
 
 			newUdpConnector->setNewConnectionCallback(

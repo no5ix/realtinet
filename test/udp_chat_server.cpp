@@ -102,11 +102,16 @@ private:
 	ConnectionListPtr connections_;
 };
 
+
+#ifndef _WIN32
 int main(int argc, char* argv[])
-//int UdpChatServer_main(int argc, char* argv[])
+#else
+//int main(int argc, char* argv[])
+int UdpChatServer_main(int argc, char* argv[])
+#endif
 {
 	//LOG_INFO << "pid = " << getpid();
-	LOG_INFO << "ThreadId = " << getCurrentThreadId();
+	// LOG_INFO << "ThreadId = " << getCurrentThreadId();
 	if (argc > 1)
 	{
 		EventLoop loop;

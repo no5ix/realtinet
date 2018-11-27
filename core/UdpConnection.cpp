@@ -42,7 +42,8 @@ void muduo::net::UdpDefaultMessageCallback(const UdpConnectionPtr& conn,
 	Timestamp recvTime)
 {}
 
-UdpConnection::UdpConnection(EventLoop* loop,
+UdpConnection::UdpConnection(const kcpsess::KcpSession::RoleTypeE role,
+	EventLoop* loop,
 	const string& nameArg,
 	Socket* connectedSocket,
 	int ConnectionId,
@@ -59,7 +60,7 @@ UdpConnection::UdpConnection(EventLoop* loop,
 	localAddr_(localAddr),
 	peerAddr_(peerAddr),
 	kcpSession_(new KcpSession(
-		KcpSession::RoleTypeE::kSrv,
+		role,
 		std::bind(&UdpConnection::DoSend, this, _1, _2),
 		std::bind(&UdpConnection::DoRecv, this),
 		[]() { return static_cast<IUINT32>(

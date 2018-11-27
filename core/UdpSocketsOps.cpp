@@ -71,7 +71,7 @@ int sockets::createUdpNonblockingOrDie(sa_family_t family)
 
 	if (sockfd < 0)
 	{
-		LOG_SYSFATAL << "sockets::createNonblockingOrDie";
+		LOG_SYSFATAL << "sockets::createUdpNonblockingOrDie";
 	}
 
 	setNonBlockAndCloseOnExec(sockfd);
@@ -79,7 +79,7 @@ int sockets::createUdpNonblockingOrDie(sa_family_t family)
 	int sockfd = ::socket(family, SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_UDP);
 	if (sockfd < 0)
 	{
-		LOG_SYSFATAL << "sockets::createNonblockingOrDie";
+		LOG_SYSFATAL << "sockets::createUdpNonblockingOrDie";
 	}
 #endif
 	return sockfd;
@@ -108,7 +108,7 @@ int sockets::createUdpNonblockingOrDie(int family)
 	if (sockfd < 0)
 	{
 		errno = saveErrno;
-		LOG_SYSFATAL << "sockets::createNoneblockOrDie";
+		LOG_SYSFATAL << "sockets::createUdpNonblockingOrDie";
 	}
 	setNonBlock(sockfd);
 	return sockfd;

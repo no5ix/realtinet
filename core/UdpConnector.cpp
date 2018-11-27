@@ -16,11 +16,12 @@ using namespace muduo::net;
 const int UdpConnector::kMaxRetryDelayMs;
 
 UdpConnector::UdpConnector(EventLoop* loop, const InetAddress& _peerAddr,
-	const uint16_t localPort)
+	const InetAddress& localAddr )
 	:
 	loop_(loop),
 	peerAddr_(_peerAddr),
-	localPort_(localPort),
+	localPort_(localAddr.toPort()),
+	localAddr_(localAddr),
 	//connectSocket_( sockets::createUdpNonblockingOrDie( serverAddr.family() ) ),
 	connect_(false),
 	state_(kDisconnected),
@@ -87,7 +88,7 @@ void UdpConnector::connect()
 	connectSocket->setReuseAddr(true);
 	connectSocket->setReusePort(true);
 	if (localPort_ != 0) // not udp client call
-		connectSocket->bindAddress(InetAddress(localPort_));
+		connectSocket->bindAddress(localAddr_);
 
 	int ret = sockets::connect(sockfd, peerAddr_.getSockAddr());
 	int savedErrno = (ret == 0) ? 0 : errno;

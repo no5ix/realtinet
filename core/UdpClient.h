@@ -60,6 +60,7 @@ namespace muduo
 			/// Not thread safe, but in loop
 			void removeConnection( const UdpConnectionPtr& conn );
 
+			EventLoopThread loopThreadForNewConn_;
 			EventLoop* loop_;
 			UdpConnectorPtr connector_; // avoid revealing UdpConnector
 			const string name_;

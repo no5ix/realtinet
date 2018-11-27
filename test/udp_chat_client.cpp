@@ -1,10 +1,11 @@
-#include "tcp_codec.h"
+#include "udp_codec.h"
 
 #include <base/Logging.h>
 //#include <muduo/base/Logging.h>
 //#include <muduo/base/Mutex.h>
 #include <net/EventLoopThread.h>
-#include <net/TcpClient.h>
+//#include <net/TcpClient.h>
+#include <core/UdpClient.h>
 
 #include <iostream>
 //#include <stdio.h>
@@ -13,17 +14,17 @@
 using namespace muduo;
 using namespace muduo::net;
 
-class TcpChatClient : noncopyable
+class UdpChatClient : noncopyable
 {
 public:
-	TcpChatClient(EventLoop* loop, const InetAddress& serverAddr)
-		: client_(loop, serverAddr, "TcpChatClient"),
-		codec_(std::bind(&TcpChatClient::onStringMessage, this, _1, _2, _3))
+	UdpChatClient(EventLoop* loop, const InetAddress& serverAddr)
+		: client_(loop, serverAddr, "UdpChatClient"),
+		codec_(std::bind(&UdpChatClient::onStringMessage, this, _1, _2, _3))
 	{
 		client_.setConnectionCallback(
-			std::bind(&TcpChatClient::onConnection, this, _1));
+			std::bind(&UdpChatClient::onConnection, this, _1));
 		client_.setMessageCallback(
-			std::bind(&TcpLengthHeaderCodec::onMessage, &codec_, _1, _2, _3));
+			std::bind(&UdpLengthHeaderCodec::onMessage, &codec_, _1, _2, _3));
 		client_.enableRetry();
 	}
 
@@ -39,25 +40,25 @@ public:
 
 	void write(const StringPiece& message)
 	{
-		//LOG_INFO << "into TcpChatClient::write";
-		//MutexLockGuard lock(mutex_);
-		std::unique_lock<std::mutex> lck(mutex_);
+		//LOG_INFO << "into UdpChatClient::write";
+		MutexLockGuard lock(mutex_);
+		//std::unique_lock<std::mutex> lck(mutex_);
 		if (connection_)
 		{
-			//LOG_INFO << "into TcpChatClient::write codec_.send(get_pointer(connection_), message);";
+			//LOG_INFO << "into UdpChatClient::write codec_.send(get_pointer(connection_), message);";
 			codec_.send(get_pointer(connection_), message);
 		}
 	}
 
 private:
-	void onConnection(const TcpConnectionPtr& conn)
+	void onConnection(const UdpConnectionPtr& conn)
 	{
 		LOG_INFO << conn->localAddress().toIpPort() << " -> "
 			<< conn->peerAddress().toIpPort() << " is "
 			<< (conn->connected() ? "UP" : "DOWN");
 
-		//MutexLockGuard lock(mutex_);
-		std::unique_lock<std::mutex> lck(mutex_);
+		MutexLockGuard lock(mutex_);
+		//std::unique_lock<std::mutex> lck(mutex_);
 		if (conn->connected())
 		{
 			connection_ = conn;
@@ -68,21 +69,27 @@ private:
 		}
 	}
 
-	void onStringMessage(const TcpConnectionPtr&,
+	void onStringMessage(const UdpConnectionPtr&,
 		const string& message,
 		Timestamp)
 	{
 		printf("<<< %s\n", message.c_str());
 	}
 
-	TcpClient client_;
-	TcpLengthHeaderCodec codec_;
-	//MutexLock mutex_;
-	std::mutex mutex_;
-	TcpConnectionPtr connection_;
+	//TcpClient client_;
+	UdpClient client_;
+	UdpLengthHeaderCodec codec_;
+	MutexLock mutex_;
+	//std::mutex mutex_;
+	UdpConnectionPtr connection_;
 };
 
-int TcpChatClient_main(int argc, char* argv[])
+#ifndef _WIN32
+int main(int argc, char* argv[])
+#else
+int main(int argc, char* argv[])
+//int UdpChatClient_main(int argc, char* argv[])
+#endif
 {
 	//LOG_INFO << "pid = " << getpid();
 	if (argc > 2)
@@ -91,7 +98,7 @@ int TcpChatClient_main(int argc, char* argv[])
 		uint16_t port = static_cast<uint16_t>(atoi(argv[2]));
 		InetAddress serverAddr(argv[1], port);
 
-		TcpChatClient client(loopThread.startLoop(), serverAddr);
+		UdpChatClient client(loopThread.startLoop(), serverAddr);
 		client.connect();
 		std::string line;
 		while (std::getline(std::cin, line))
@@ -100,7 +107,7 @@ int TcpChatClient_main(int argc, char* argv[])
 		}
 		client.disconnect();
 		//CurrentThread::sleepUsec(1000 * 1000);  // wait for disconnect, see ace/logging/client.cc
-		std::this_thread::sleep_for(std::chrono::seconds(1));
+		// std::this_thread::sleep_for(std::chrono::seconds(1));
 	}
 	else
 	{
@@ -109,7 +116,7 @@ int TcpChatClient_main(int argc, char* argv[])
 		uint16_t port = 2000;
 		InetAddress serverAddr("127.0.0.1", port);
 
-		TcpChatClient client(loopThread.startLoop(), serverAddr);
+		UdpChatClient client(loopThread.startLoop(), serverAddr);
 		client.connect();
 		std::string line;
 		while (std::getline(std::cin, line))
@@ -118,7 +125,7 @@ int TcpChatClient_main(int argc, char* argv[])
 		}
 		client.disconnect();
 		//CurrentThread::sleepUsec(1000 * 1000);  // wait for disconnect, see ace/logging/client.cc
-		std::this_thread::sleep_for(std::chrono::seconds(1));
+		// std::this_thread::sleep_for(std::chrono::seconds(1));
 	}
 	//else
 	//{

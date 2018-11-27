@@ -8,6 +8,7 @@
 #include <net/SocketsOps.h>
 
 #include <stdio.h>  // snprintf
+#include <kcpsess/kcpsess.h>
 
 using namespace muduo;
 using namespace muduo::net;
@@ -48,7 +49,7 @@ UdpClient::UdpClient( EventLoop* loop,
 	const InetAddress& serverAddr,
 	const string& nameArg )
 	: loop_( CHECK_NOTNULL( loop ) ),
-	connector_( new UdpConnector( loop, serverAddr, 0 ) ),
+	connector_( new UdpConnector( loop, serverAddr, InetAddress(0) ) ),
 	name_( nameArg ),
 	connectionCallback_( UdpDefaultConnectionCallback ),
 	messageCallback_( UdpDefaultMessageCallback ),
@@ -125,6 +126,7 @@ void UdpClient::stop()
 void UdpClient::newConnection( Socket* connectedSocket )
 {
 	loop_->assertInLoopThread();
+
 	InetAddress peerAddr( sockets::getPeerAddr( connectedSocket->fd() ) );
 	char buf[32];
 	snprintf( buf, sizeof buf, ":%s#%d", peerAddr.toIpPort().c_str(), nextConnId_ );
@@ -133,12 +135,8 @@ void UdpClient::newConnection( Socket* connectedSocket )
 	InetAddress localAddr( sockets::getLocalAddr( connectedSocket->fd() ) );
 	// FIXME poll with zero timeout to double confirm the new connection
 	// FIXME use make_shared if necessary
-	UdpConnectionPtr conn( new UdpConnection( loop_,
-		connName,
-		connectedSocket,
-		nextConnId_,
-		localAddr,
-		peerAddr ) );
+	UdpConnectionPtr conn( new UdpConnection( kcpsess::KcpSession::RoleTypeE::kCli, loopThreadForNewConn_.startLoop(),
+		connName, connectedSocket, nextConnId_, localAddr, peerAddr ) );
 
 	++nextConnId_;
 

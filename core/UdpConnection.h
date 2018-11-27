@@ -40,12 +40,14 @@ namespace muduo
 			/// Constructs a UdpConnection with a connected sockfd
 			///
 			/// User should not create this object.
-			UdpConnection( EventLoop* loop,
+			UdpConnection(const kcpsess::KcpSession::RoleTypeE role,
+				EventLoop* loop,
 				const string& name,
 				Socket* connectedSocket,
 				int ConnectionId,
 				const InetAddress& localAddr,
-				const InetAddress& peerAddr );
+				const InetAddress& peerAddr);
+
 			~UdpConnection();
 
 			enum StateE { kDisconnected, kConnecting, kConnected, kDisconnecting };
@@ -68,7 +70,7 @@ namespace muduo
 
 			// FIXME efficiency!!!
 			void send(Buffer* buf)
-			{ send(buf->peek(), buf->readableBytes()); }
+			{ send(buf->peek(), static_cast<int>(buf->readableBytes())); }
 
 			void KcpSessionUpdate();
 

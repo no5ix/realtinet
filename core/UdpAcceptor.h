@@ -52,6 +52,7 @@ namespace muduo
 			NewConnectionCallback newConnectionCallback_;
 			bool listenning_;
 			uint16_t listenPort_;
+			InetAddress listenAddr_;
 
 			typedef std::map<InetAddress, UdpConnectorPtr> InetAddressToUdpConnectorMap;
 			InetAddressToUdpConnectorMap peerAddrToUdpConnectors_;

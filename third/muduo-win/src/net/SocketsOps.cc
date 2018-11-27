@@ -191,12 +191,12 @@ int sockets::connect(int socketfd, const struct sockaddr* addr)
 	return ::connect(socketfd, addr, static_cast<socklen_t>(sizeof(struct sockaddr)));
 }
 
-ssize_t sockets::read(int sockfd, void *buf, int count)
+ssize_t sockets::read(int sockfd, void *buf, size_t count)
 {
 	return recv(sockfd, static_cast<char*>(buf),count,0);
 }
 
-ssize_t sockets::write(int sockfd, const void* buf, int count)
+ssize_t sockets::write(int sockfd, const void* buf, size_t count)
 {
 	return send(sockfd,static_cast<const char*>(buf), count, 0);
 }

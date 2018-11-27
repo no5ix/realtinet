@@ -47,8 +47,8 @@ namespace muduo
 			
 			int accept(int sockfd, struct sockaddr_in6* addr);
 
-			ssize_t read(int sockfd, void *buf, int count);
-			ssize_t write(int sockfd, const void* buf, int count);
+			ssize_t read(int sockfd, void *buf, size_t count);
+			ssize_t write(int sockfd, const void* buf, size_t count);
 			ssize_t readv(int sockfd, IOV_TYPE *iov, int iovcnt);
 
 			void close(int sockfd);

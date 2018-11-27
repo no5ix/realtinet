@@ -40,11 +40,11 @@
     <Filter Include="third\muduo-win\base\security">
       <UniqueIdentifier>{790e6aef-3ad8-4d8a-b541-8072c1d5b26c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="third\muduo-win\test\chat">
-      <UniqueIdentifier>{4b103e73-a286-4e8a-9d41-6ef5f5f5fe2f}</UniqueIdentifier>
-    </Filter>
     <Filter Include="third\muduo-win\net\Poller">
       <UniqueIdentifier>{7e3d1058-e9e1-4a10-a80d-94a258a5cf45}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test">
+      <UniqueIdentifier>{4b103e73-a286-4e8a-9d41-6ef5f5f5fe2f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -323,17 +323,17 @@
     <ClCompile Include="..\..\..\third\muduo-win\src\net\Poller\DefaultPoller.cc">
       <Filter>third\muduo-win\net\Poller</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\third\muduo-win\src\test\chat\tcp_chat_client.cpp">
-      <Filter>third\muduo-win\test\chat</Filter>
+    <ClCompile Include="..\..\..\test\tcp_chat_client.cpp">
+      <Filter>test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\third\muduo-win\src\test\chat\tcp_chat_server.cpp">
-      <Filter>third\muduo-win\test\chat</Filter>
+    <ClCompile Include="..\..\..\test\tcp_chat_server.cpp">
+      <Filter>test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\third\muduo-win\src\test\chat\udp_chat_client.cpp">
-      <Filter>third\muduo-win\test\chat</Filter>
+    <ClCompile Include="..\..\..\test\udp_chat_client.cpp">
+      <Filter>test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\third\muduo-win\src\test\chat\udp_chat_server.cpp">
-      <Filter>third\muduo-win\test\chat</Filter>
+    <ClCompile Include="..\..\..\test\udp_chat_server.cpp">
+      <Filter>test</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -625,11 +625,11 @@
     <ClInclude Include="..\..\..\third\muduo-win\src\base\Mutex.h">
       <Filter>third\muduo-win\base</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\third\muduo-win\src\test\chat\tcp_codec.h">
-      <Filter>third\muduo-win\test\chat</Filter>
+    <ClInclude Include="..\..\..\test\tcp_codec.h">
+      <Filter>test</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\third\muduo-win\src\test\chat\udp_codec.h">
-      <Filter>third\muduo-win\test\chat</Filter>
+    <ClInclude Include="..\..\..\test\udp_codec.h">
+      <Filter>test</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

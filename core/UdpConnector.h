@@ -30,7 +30,8 @@ namespace muduo
 		public:
 			typedef std::function<void( Socket* )> NewConnectionCallback;
 
-			UdpConnector( EventLoop* loop, const InetAddress& serverAddr, const uint16_t localPort );
+			//UdpConnector( EventLoop* loop, const InetAddress& serverAddr, const uint16_t localPort );
+			UdpConnector( EventLoop* loop, const InetAddress& serverAddr, const InetAddress& localAddr );
 			~UdpConnector();
 
 			void setNewConnectionCallback( const NewConnectionCallback& cb )
@@ -69,6 +70,7 @@ namespace muduo
 			EventLoop* loop_;
 			InetAddress peerAddr_;
 			uint16_t localPort_;
+			InetAddress localAddr_;
 			bool connect_; // atomic
 			States state_;  // FIXME: use atomic variable
 			std::unique_ptr<Channel> channel_;

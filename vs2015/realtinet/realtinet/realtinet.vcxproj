@@ -139,6 +139,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\..\core\UdpSocketsOps.cpp" />
+    <ClCompile Include="..\..\..\test\tcp_chat_client.cpp" />
+    <ClCompile Include="..\..\..\test\tcp_chat_server.cpp" />
+    <ClCompile Include="..\..\..\test\udp_chat_client.cpp" />
+    <ClCompile Include="..\..\..\test\udp_chat_server.cpp" />
     <ClCompile Include="..\..\..\third\kcpsess\ikcp.c" />
     <ClCompile Include="..\..\..\third\kcpsess\TestKcpSessionClient.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -181,13 +185,6 @@
     <ClCompile Include="..\..\..\third\muduo-win\src\net\TimerQueue.cc" />
     <ClCompile Include="..\..\..\third\muduo-win\src\test\acceptor_test.cc" />
     <ClCompile Include="..\..\..\third\muduo-win\src\test\async_logging_test.cc" />
-    <ClCompile Include="..\..\..\third\muduo-win\src\test\chat\tcp_chat_client.cpp" />
-    <ClCompile Include="..\..\..\third\muduo-win\src\test\chat\tcp_chat_server.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\third\muduo-win\src\test\chat\udp_chat_client.cpp" />
-    <ClCompile Include="..\..\..\third\muduo-win\src\test\chat\udp_chat_server.cpp" />
     <ClCompile Include="..\..\..\third\muduo-win\src\test\config_file_read_test.cc" />
     <ClCompile Include="..\..\..\third\muduo-win\src\test\connector_test.cc" />
     <ClCompile Include="..\..\..\third\muduo-win\src\test\echoclient_test.cc" />
@@ -340,6 +337,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="..\..\..\core\UdpSocketsOps.h" />
+    <ClInclude Include="..\..\..\test\tcp_codec.h" />
+    <ClInclude Include="..\..\..\test\udp_codec.h" />
     <ClInclude Include="..\..\..\third\kcpsess\ikcp.h" />
     <ClInclude Include="..\..\..\third\kcpsess\kcpsess.h" />
     <ClInclude Include="..\..\..\third\muduo-win\src\alds\min_heap.h" />
@@ -387,8 +386,6 @@
     <ClInclude Include="..\..\..\third\muduo-win\src\net\Timer.h" />
     <ClInclude Include="..\..\..\third\muduo-win\src\net\TimerId.h" />
     <ClInclude Include="..\..\..\third\muduo-win\src\net\TimerQueue.h" />
-    <ClInclude Include="..\..\..\third\muduo-win\src\test\chat\tcp_codec.h" />
-    <ClInclude Include="..\..\..\third\muduo-win\src\test\chat\udp_codec.h" />
     <ClInclude Include="..\..\..\third\muduo\base\Atomic.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>

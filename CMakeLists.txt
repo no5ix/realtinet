@@ -50,11 +50,13 @@ if(UNIX)
     set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
 
 
+    include_directories(${PROJECT_SOURCE_DIR})
     include_directories(${PROJECT_SOURCE_DIR}/core)
     include_directories(${PROJECT_SOURCE_DIR}/third)
     include_directories(${PROJECT_SOURCE_DIR}/third/muduo)
 
     add_subdirectory(core)
+    add_subdirectory(test)
     add_subdirectory(third/muduo)
     add_subdirectory(third/kcpsess)
 

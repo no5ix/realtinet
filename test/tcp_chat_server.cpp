@@ -1,7 +1,7 @@
 #include "tcp_codec.h"
 
 #include <base/Logging.h>
-//#include <base/Mutex.h>
+#include <base/Mutex.h>
 #include <net/EventLoop.h>
 #include <net/TcpServer.h>
 
@@ -49,8 +49,8 @@ private:
 			<< conn->peerAddress().toIpPort() << " is "
 			<< (conn->connected() ? "UP" : "DOWN");
 
-		//MutexLockGuard lock(mutex_);
-		std::unique_lock<std::mutex> lck(mutex_);
+		MutexLockGuard lock(mutex_);
+		// std::unique_lock<std::mutex> lck(mutex_);
 		if (!connections_.unique())
 		{
 			connections_.reset(new ConnectionList(*connections_));
@@ -88,24 +88,27 @@ private:
 
 	ConnectionListPtr getConnectionList()
 	{
-		//MutexLockGuard lock(mutex_);
-		std::unique_lock<std::mutex> lck(mutex_);
+		MutexLockGuard lock(mutex_);
+		// std::unique_lock<std::mutex> lck(mutex_);
 		return connections_;
 	}
 
 	TcpServer server_;
 	TcpLengthHeaderCodec codec_;
-	//MutexLock mutex_;
-	std::mutex mutex_;
+	MutexLock mutex_;
+	// std::mutex mutex_;
 	ConnectionListPtr connections_;
 };
 
+#ifndef _WIN32
+int main(int argc, char* argv[])
+#else
 //int main(int argc, char* argv[])
 int TcpChatServer_main(int argc, char* argv[])
-//int main()
+#endif
 {
 	//LOG_INFO << "pid = " << getpid();
-	LOG_INFO << "ThreadId = " << getCurrentThreadId();
+	// LOG_INFO << "ThreadId = " << getCurrentThreadId();
 	if (argc > 1)
 	{
 		EventLoop loop;
