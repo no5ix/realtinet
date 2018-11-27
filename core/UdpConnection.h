@@ -18,6 +18,7 @@
 #include <net/Callbacks.h>
 #include <net/Buffer.h>
 #include <net/InetAddress.h>
+#include <net/TimerId.h>
 
 #include <memory>
 
@@ -155,6 +156,7 @@ namespace muduo
 
 			// kcp
 			std::unique_ptr<kcpsess::KcpSession> kcpSession_;
+			TimerId curKcpsessUpTimerId_;
 		};
 
 		typedef std::shared_ptr<UdpConnection> UdpConnectionPtr;

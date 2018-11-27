@@ -106,8 +106,8 @@ private:
 #ifndef _WIN32
 int main(int argc, char* argv[])
 #else
-int main(int argc, char* argv[])
-//int UdpChatServer_main(int argc, char* argv[])
+//int main(int argc, char* argv[])
+int UdpChatServer_main(int argc, char* argv[])
 #endif
 {
 	//LOG_INFO << "pid = " << getpid();

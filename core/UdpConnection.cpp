@@ -74,19 +74,22 @@ UdpConnection::UdpConnection(const kcpsess::KcpSession::RoleTypeE role,
 		std::bind(&UdpConnection::handleError, this));
 	LOG_DEBUG << "UdpConnection::ctor[" << name_ << "] at " << this
 		<< " fd=" << socket_->fd();
+	
+	KcpSessionUpdate();
 }
 
 UdpConnection::~UdpConnection()
 {
+	assert(state_ == kDisconnected);
 	LOG_DEBUG << "UdpConnection::dtor[" << name_ << "] at " << this
 		<< " fd=" << channel_->fd()
 		<< " state=" << stateToString();
 
-	LOG_INFO << localAddress().toIpPort() << " -> "
-		<< peerAddress().toIpPort() << " is "
-		<< (connected() ? "UP" : "DOWN");
+	//LOG_INFO << localAddress().toIpPort() << " -> "
+	//	<< peerAddress().toIpPort() << " is "
+	//	<< (connected() ? "UP" : "DOWN");
 
-	assert(state_ == kDisconnected);
+	loop_->cancel(curKcpsessUpTimerId_);
 }
 
 void UdpConnection::send(const void* data, int len,
@@ -132,10 +135,15 @@ void UdpConnection::handleRead(Timestamp receiveTime)
 
 void UdpConnection::KcpSessionUpdate()
 {
+	auto kcpsessUpFunc = [&]() {
+		curKcpsessUpTimerId_ = loop_->runAt(Timestamp(kcpSession_->Update() * 1000), [&]() {
+			KcpSessionUpdate(); });
+	};
+
 	if (loop_->isInLoopThread())
-		kcpSession_->Update();
+		kcpsessUpFunc();
 	else
-		loop_->runInLoop([&]() { kcpSession_->Update(); });
+		loop_->runInLoop([&]() { kcpsessUpFunc(); });
 }
 
 void UdpConnection::DoSend(const void* data, int len)
