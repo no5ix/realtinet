@@ -61,6 +61,7 @@ UdpConnection::UdpConnection(const kcpsess::KcpSession::RoleTypeE role,
 	localAddr_(localAddr),
 	peerAddr_(peerAddr),
 	firstRcvBuf_(firstRcvBuf),
+	isCliKcpsessConned_(false),
 	kcpSession_(new KcpSession(
 		role,
 		std::bind(&UdpConnection::DoSend, this, _1, _2),
@@ -137,9 +138,19 @@ void UdpConnection::handleRead(Timestamp receiveTime)
 
 void UdpConnection::KcpSessionUpdate()
 {
+	//LOG_INFO << "call KcpSessionUpdate";
+
 	auto kcpsessUpFunc = [&]() {
 		curKcpsessUpTimerId_ = loop_->runAt(Timestamp(kcpSession_->Update() * 1000), [&]() {
-			KcpSessionUpdate(); });
+			KcpSessionUpdate(); 
+			if (kcpSession_->CheckTimeout())
+				handleClose();
+			if (kcpSession_->IsClient() && !isCliKcpsessConned_ && kcpSession_->IsKcpsessConnected())
+			{
+				isCliKcpsessConned_ = true;
+				connectionCallback_(shared_from_this());
+			}
+		});
 	};
 
 	if (loop_->isInLoopThread())
@@ -197,6 +208,8 @@ KcpSession::InputData UdpConnection::DoRecv()
 
 void UdpConnection::sendInLoop(const void* data, size_t len)
 {
+	//LOG_INFO << "call sendInLoop";
+
 	loop_->assertInLoopThread();
 	ssize_t nwrote = 0;
 	if (state_ == kDisconnected)
@@ -313,9 +326,11 @@ void UdpConnection::connectEstablished()
 	channel_->tie(shared_from_this());
 	channel_->enableReading();
 
-	connectionCallback_(shared_from_this());
 	if (kcpSession_->GetRoleType() == KcpSession::RoleTypeE::kSrv)
-		handleRead(Timestamp::now());
+	{
+		connectionCallback_(shared_from_this());
+		handleRead(Timestamp::now()); // for the first recv data, see @firstRcvBuf_
+	}
 }
 
 void UdpConnection::connectDestroyed()

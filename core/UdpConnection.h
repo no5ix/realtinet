@@ -74,11 +74,6 @@ namespace muduo
 			void send(Buffer* buf)
 			{ send(buf->peek(), static_cast<int>(buf->readableBytes())); }
 
-			void KcpSessionUpdate();
-
-			void DoSend(const void* message, int len);
-			kcpsess::KcpSession::InputData DoRecv();
-
 			void shutdown(); // NOT thread safe, no simultaneous calling
 							 // void shutdownAndForceCloseAfter(double seconds); // NOT thread safe, no simultaneous calling
 			void forceClose();
@@ -104,7 +99,7 @@ namespace muduo
 
 			// called when TcpServer accepts a new connection
 			void connectEstablished();   // should be called only once
-										 // called when TcpServer has removed me from its map
+												 // called when TcpServer has removed me from its map
 			void connectDestroyed();  // should be called only once
 
 			void setContext(const realtinet::any& context)
@@ -120,6 +115,11 @@ namespace muduo
 			{ return connId_; }
 
 		private:
+
+			void KcpSessionUpdate();
+			void DoSend(const void* message, int len);
+			kcpsess::KcpSession::InputData DoRecv();
+
 			void handleRead( Timestamp receiveTime);
 			void handleClose();
 			void handleError();
@@ -159,6 +159,7 @@ namespace muduo
 			std::unique_ptr<kcpsess::KcpSession> kcpSession_;
 			TimerId curKcpsessUpTimerId_;
 			Buffer* firstRcvBuf_;
+			bool isCliKcpsessConned_;
 		};
 
 		typedef std::shared_ptr<UdpConnection> UdpConnectionPtr;
