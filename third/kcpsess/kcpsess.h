@@ -4,12 +4,11 @@
 #include <memory>
 #include <queue>
 #include <deque>
-#include <map>
+#include <unordered_map>
 #include <string>
 #include <algorithm>
 #include <vector>
 #include <assert.h>
-#include <string>
 #include "ikcp.h"
 
 
@@ -599,29 +598,29 @@ public:
 			oBuf->prependInt8(static_cast<int8_t>(frgCnt - i - 1));
 			oBuf->prependInt8(static_cast<int8_t>(frgCnt));
 			oBuf->prependInt32(nextSndSn_++);
-			outputQueue_.push_back(std::string(oBuf->peek(), kHeaderLen + curSize));
+			outputPktDeque_.emplace_back(std::string(oBuf->peek(), kHeaderLen + curSize));
 			oBuf->retrieve(kHeaderLen + curSize);
 			curLen -= curSize;
 		}
 		assert(curLen == 0);
 
-		for (size_t i = 0; i < outputQueue_.size(); ++i)
+		for (size_t i = 0; i < outputPktDeque_.size(); ++i)
 		{
 			assert(this->userOutputFunc_ != nullptr);
-			oBuf->append(*(outputQueue_.begin() + i));
+			oBuf->append(*(outputPktDeque_.begin() + i));
 
 			if (i == kRedundancyCnt_ - 1)
 			{
-				outputQueue_.pop_front();
+				outputPktDeque_.pop_front();
 				i = -1;
 				userOutputFunc_(oBuf->peek(), static_cast<int>(oBuf->readableBytes()));
 				oBuf->retrieveAll();
-				if (outputQueue_.size() < kRedundancyCnt_)
+				if (outputPktDeque_.size() < kRedundancyCnt_)
 					break;
 			}
-			else if (i == outputQueue_.size() - 1)
+			else if (i == outputPktDeque_.size() - 1)
 			{
-				assert(outputQueue_.size() <= 2);
+				assert(outputPktDeque_.size() <= 2);
 				userOutputFunc_(oBuf->peek(), static_cast<int>(oBuf->readableBytes()));
 				oBuf->retrieveAll();
 			}
@@ -656,7 +655,11 @@ public:
 				}
 				else if (rcvFrg == 0)
 				{
-					if (inputFrgMap_.find(rcvSn - 1) != inputFrgMap_.end())
+					if (rcvFrgCnt == 1)
+					{
+						rcvFunc_(userBuf, len, iBuf->readInt16());
+					}
+					else if (inputFrgMap_.find(rcvSn - 1) != inputFrgMap_.end())
 					{
 						int sumDataLen = iBuf->readInt16();
 						for (int sn = rcvSn - 1; sn >= rcvSn - rcvFrgCnt + 1; --sn)
@@ -666,14 +669,8 @@ public:
 						}
 						rcvFunc_(userBuf, len, sumDataLen);
 					}
-					else if (rcvFrgCnt > 1)
-					{
+					else
 						discardRcvedData();
-					}
-					else if (rcvFrgCnt == 1)
-					{
-						rcvFunc_(userBuf, len, iBuf->readInt16());
-					}
 				}
 			}
 			else if (rcvSn < nextRcvSn_)
@@ -690,7 +687,7 @@ public:
 		return hasData;
 	}
 
-	bool IsFinishedThisRound_() const { return isFinishedThisRound_; }
+	bool IsFinishedThisRound() const { return isFinishedThisRound_; }
 
 private:
 	bool IsThereAnyDataLeft(const Buf* buf) const
@@ -712,8 +709,8 @@ private:
 private:
 	RecvFuncion rcvFunc_;
 	OutputFunction userOutputFunc_;
-	std::deque<std::string> outputQueue_;
-	std::map<int, std::string> inputFrgMap_;
+	std::deque<std::string> outputPktDeque_;
+	std::unordered_map<int, std::string> inputFrgMap_;
 	int32_t nextSndSn_;
 	int32_t nextRcvSn_;
 	bool isFinishedThisRound_;
@@ -744,29 +741,29 @@ public:
 	enum PktTypeE { kSyn = 66, kAck, kPsh, kFin, kRst };
 
 	typedef std::function<InputData()> InputFunction;
-	typedef std::function<IUINT32()> CurrentTimestampCallBack;
+	typedef std::function<IUINT32()> CurrentTimestampMsCallBack;
 
 public:
 	KcpSession(const RoleTypeE role,
-		const OutputFunction& outputFunc,
-		const InputFunction& inputFunc,
-		const CurrentTimestampCallBack& currentTimestampCb,
+		const OutputFunction& userOutputFunc,
+		const InputFunction& userInputFunc,
+		const CurrentTimestampMsCallBack& currentTimestampMsCb,
 		IUINT32 timeoutMs = 888,
 		bool fecEnable = true)
 		:
 		role_(role),
 		conv_(0),
 		timeoutMs_(timeoutMs),
-		userOutputFunc_(outputFunc),
-		userInputFunc_(inputFunc),
-		curTsCb_(currentTimestampCb),
+		userOutputFunc_(userOutputFunc),
+		userInputFunc_(userInputFunc),
+		curTsMsCb_(currentTimestampMsCb),
 		kcp_(nullptr),
 		kcpConnState_(kConnecting),
 		fecEnable_(fecEnable),
-		fec_(outputFunc, std::bind(&KcpSession::DoRecv, this, std::placeholders::_1,
+		fec_(userOutputFunc_, std::bind(&KcpSession::DoRecv, this, std::placeholders::_1,
 			std::placeholders::_2, std::placeholders::_3)),
 		nextUpdateTs_(0),
-		lastRcvDataTs_(curTsCb_()),
+		lastRcvDataTs_(curTsMsCb_()),
 		sndWnd_(128),
 		rcvWnd_(128),
 		maxWaitSndCount_(2 * sndWnd_),
@@ -777,22 +774,24 @@ public:
 		streamMode_(0),
 		mtu_(300),
 		rx_minrto_(10)
-	{}
+	{
+		if (IsClient() && !IsKcpsessConnected())
+			for (int i = 6; i > 0; --i)
+				SendSyn();
+	}
 
 	// for Application-level Congestion Control
 	bool CheckCanSend() const
-	{ 
-		return (kcp_ ? ikcp_waitsnd(kcp_) < maxWaitSndCount_ : true) 
+	{
+		return (kcp_ ? ikcp_waitsnd(kcp_) < maxWaitSndCount_ : true)
 			&& (static_cast<int>(sndQueueBeforeConned_.size()) < maxWaitSndCount_);
 	}
 
-	// update then return next update timestamp
+	// update then returns next update timestamp in ms
 	IUINT32 Update(bool mustUpdateFlag = false)
 	{
 		CheckTimeout();
-		auto curTimestamp = curTsCb_();
-		if (IsClient() && !IsKcpsessConnected())
-			SendSyn();
+		auto curTimestamp = curTsMsCb_();
 
 		if (kcp_ && IsKcpsessConnected())
 		{
@@ -835,7 +834,7 @@ public:
 			if (!IsKcpsessConnected() && IsClient())
 			{
 				SendSyn();
-				sndQueueBeforeConned_.push(std::string(static_cast<const char*>(data), len));
+				sndQueueBeforeConned_.emplace(std::string(static_cast<const char*>(data), len));
 			}
 			else if (IsKcpsessConnected())
 			{
@@ -865,7 +864,7 @@ public:
 	{
 		if (fecEnable_)
 		{
-			if (fec_.IsFinishedThisRound_())
+			if (fec_.IsFinishedThisRound())
 			{
 				const InputData& rawRecvdata = userInputFunc_();
 				if (rawRecvdata.len_ <= 0)
@@ -916,7 +915,7 @@ public:
 
 	bool CheckTimeout()
 	{
-		bool isTimeout = (curTsCb_() - lastRcvDataTs_) >= timeoutMs_;
+		bool isTimeout = (curTsMsCb_() - lastRcvDataTs_) >= timeoutMs_;
 		if (isTimeout)
 			SetKcpConnectState(kDisconnected);
 		return isTimeout;
@@ -950,21 +949,33 @@ private:
 					SetKcpConnectState(kConnected);
 					InitKcp(GetNewConv());
 				}
-				else
-				{
-					InitKcp(conv_, true);
-				}
+				//else
+				//{
+				//	InitKcp(conv_, true);
+				//}
 				SendAckAndConv();
 				len = 0;
 			}
 			else if (pktType == kAck)
 			{
-				if (!IsKcpsessConnected())
+				assert(IsClient());
+				int32_t rcvConv = inputBuf_.readInt32();
+				readableLen -= 4;
+
+				//if (!IsKcpsessConnected())
+				if (kcpConnState_ == kConnecting)
 				{
-					SetKcpConnectState(kConnected);
-					InitKcp(inputBuf_.readInt32());
-					readableLen -= 4;
+					InitKcp(rcvConv);
 				}
+				else if (kcpConnState_ == kDisconnected) // cli timeout
+				{
+					if (rcvConv != static_cast<int32_t>(conv_))
+					{
+						// FIXME : 把kcp中的还未确认或将要发送的数据移出来
+						InitKcp(rcvConv, true);
+					}
+				}
+				SetKcpConnectState(kConnected);
 				len = 0;
 			}
 			else if (pktType == kRst)
@@ -1022,7 +1033,7 @@ private:
 		inputBuf_.retrieve(readableLen);
 	}
 
-	void UpdateLastRcvDataTs() { lastRcvDataTs_ = curTsCb_(); }
+	void UpdateLastRcvDataTs() { lastRcvDataTs_ = curTsMsCb_(); }
 
 	void SendHeartbeat()
 	{
@@ -1122,7 +1133,7 @@ private:
 	ConnectionStateE kcpConnState_;
 	Buf outputBuf_;
 	Buf inputBuf_;
-	CurrentTimestampCallBack curTsCb_;
+	CurrentTimestampMsCallBack curTsMsCb_;
 	IUINT32 conv_;
 	IUINT32 timeoutMs_;
 	RoleTypeE role_;
