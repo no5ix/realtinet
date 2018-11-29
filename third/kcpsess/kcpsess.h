@@ -551,10 +551,15 @@ private:
 	static const char kCRLF[];
 };
 
+
 class KcpSession;
 typedef std::shared_ptr<KcpSession> KcpSessionPtr;
 typedef std::function<void(const void* pendingSendData, int pendingSendDataLen)> OutputFunction;
 typedef std::function<void(const KcpSessionPtr&)> KcpSessionConnectionCallback;
+
+enum TransmitModeE { kUnreliable = 88, kReliable };
+enum PktTypeE { kSyn = 66, kAck, kPsh, kRst, kHeartbeat };
+
 
 class Fec
 {
@@ -563,21 +568,22 @@ public:
 	static const size_t kRedundancyCnt_ = 3;
 	//static const size_t kMaxSeparatePktSize = 1460 / kRedundancyCnt_;
 
-	static const size_t kDataLen = sizeof(int16_t);
+	static const size_t kPktTypeLen = sizeof(int8_t);
 	static const size_t kSnLen = sizeof(int32_t);
-	static const size_t kFrgLen = sizeof(int8_t);
 	static const size_t kFrgCntLen = sizeof(int8_t);
-	static const size_t kHeaderLen = kDataLen + kSnLen + kFrgLen + kFrgCntLen;
+	static const size_t kFrgLen = sizeof(int8_t);
+	static const size_t kDataLen = sizeof(int16_t);
+	static const size_t kHeaderLen = kPktTypeLen + kSnLen + kFrgCntLen + kFrgLen + kDataLen;
 	static const size_t kMaxSeparatePktDataSize = (1460 - (kRedundancyCnt_ * kHeaderLen)) / kRedundancyCnt_;
 
-	typedef std::function<void(Buf*, int&, int)> RecvFuncion;
+	typedef std::function<void(Buf*, int&, int, PktTypeE)> RecvFuncion;
 public:
 	Fec(const OutputFunction& outputFunc, const RecvFuncion& rcvFunc)
 		: userOutputFunc_(outputFunc), rcvFunc_(rcvFunc),
 		nextSndSn_(0), nextRcvSn_(0), isFinishedThisRound_(true)
 	{}
 
-	int Output(Buf* oBuf)
+	int Output(Buf* oBuf, PktTypeE pktType)
 	{
 		size_t curLen = oBuf->readableBytes();
 		size_t frgCnt = 0;
@@ -600,6 +606,7 @@ public:
 			oBuf->prependInt8(static_cast<int8_t>(frgCnt - i - 1));
 			oBuf->prependInt8(static_cast<int8_t>(frgCnt));
 			oBuf->prependInt32(nextSndSn_++);
+			oBuf->prependInt8(static_cast<int8_t>(pktType));
 			outputPktDeque_.emplace_back(std::string(oBuf->peek(), kHeaderLen + curSize));
 			oBuf->retrieve(kHeaderLen + curSize);
 			curLen -= curSize;
@@ -637,9 +644,16 @@ public:
 		{
 			auto discardRcvedData = [&]() { iBuf->retrieve(iBuf->readInt16()); len = 0; };
 			isFinishedThisRound_ = false;
+			PktTypeE pktType =  static_cast<PktTypeE>(iBuf->readInt8());
 			int32_t rcvSn = iBuf->readInt32();
 			int8_t rcvFrgCnt = iBuf->readInt8();
 			int8_t rcvFrg = iBuf->readInt8();
+
+			if (pktType == kRst)
+			{
+				rcvFunc_(userBuf, len, iBuf->readInt16(), pktType);
+				return hasData;
+			}
 
 			if (rcvSn >= nextRcvSn_)
 			{
@@ -660,7 +674,7 @@ public:
 				{
 					if (rcvFrgCnt == 1)
 					{
-						rcvFunc_(userBuf, len, iBuf->readInt16());
+						rcvFunc_(userBuf, len, iBuf->readInt16(), pktType);
 					}
 					else if (inputFrgMap_.find(rcvSn - 1) != inputFrgMap_.end())
 					{
@@ -670,7 +684,7 @@ public:
 							iBuf->prepend(inputFrgMap_[sn]);
 							sumDataLen += static_cast<int>(inputFrgMap_[sn].size());
 						}
-						rcvFunc_(userBuf, len, sumDataLen);
+						rcvFunc_(userBuf, len, sumDataLen, pktType);
 					}
 					else
 						discardRcvedData();
@@ -702,7 +716,7 @@ private:
 		if (buf->readableBytes() >= Fec::kSnLen)
 		{
 			int16_t be16 = 0;
-			::memcpy(&be16, buf->peek() + Fec::kSnLen + Fec::kFrgLen + Fec::kFrgCntLen, sizeof be16);
+			::memcpy(&be16, buf->peek() + (kHeaderLen - kDataLen), sizeof be16);
 			const uint16_t dataLen = be16toh(be16);
 
 			if (dataLen > kMaxSeparatePktDataSize)
@@ -744,8 +758,6 @@ public:
 public:
 	enum ConnectionStateE { kConnecting, kConnected, kResetting, kReset, kDefault };
 	enum RoleTypeE { kSrv, kCli };
-	enum TransmitModeE { kUnreliable = 88, kReliable };
-	enum PktTypeE { kSyn = 66, kAck, kPsh, kRst, kHeartbeat };
 
 	typedef std::function<InputData()> InputFunction;
 	typedef std::function<IUINT32()> CurrentTimestampMsCallBack;
@@ -769,7 +781,7 @@ public:
 		curSubConnState_(kDefault),
 		//fecEnable_(fecEnable),
 		fec_(userOutputFunc_, std::bind(&KcpSession::DoRecv, this, std::placeholders::_1,
-			std::placeholders::_2, std::placeholders::_3)),
+			std::placeholders::_2, std::placeholders::_3, std::placeholders::_4)),
 		nextUpdateTs_(0),
 		lastRcvDataTs_(curTsMsFunc_()),
 		sndWnd_(128),
@@ -829,9 +841,9 @@ public:
 		{
 			//if (!fecEnable_)
 				//assert(len <= 1460 - 1);
-			outputBuf_.appendInt8(kUnreliable);
+			//outputBuf_.appendInt8(kUnreliable);
 			outputBuf_.append(data, len);
-			int error = OutputAfterCheckingFec();
+			int error = OutputAfterCheckingFec(static_cast<PktTypeE>(kUnreliable));
 			if (error)
 				return error;
 			//if (!IsKcpsessConnected() && IsClient())
@@ -961,12 +973,12 @@ private:
 		}
 	}
 
-	void DoRecv(Buf* userBuf, int& len, int readableLen)
+	void DoRecv(Buf* userBuf, int& len, int readableLen, PktTypeE pktType)
 	{
 		//CheckTimeout();
-		int8_t pktType = inputBuf_.readInt8();
-		readableLen -= 1;
-		if (pktType == kUnreliable)
+		//int8_t pktType = inputBuf_.readInt8();
+		//readableLen -= 1;
+		if (pktType == static_cast<PktTypeE>(kUnreliable))
 		{
 			userBuf->append(inputBuf_.peek(), readableLen);
 			len = readableLen;
@@ -1061,31 +1073,31 @@ private:
 
 	void SendHeartbeat()
 	{
-		outputBuf_.appendInt8(kHeartbeat);
-		OutputAfterCheckingFec();
+		//outputBuf_.appendInt8(kHeartbeat);
+		OutputAfterCheckingFec(kHeartbeat);
 	}
 
 	void SendRst()
 	{
 		printf("\nSendRstSendRstSendRstSendRst\n");
 		assert(IsServer());
-		outputBuf_.appendInt8(kRst);
-		OutputAfterCheckingFec();
+		//outputBuf_.appendInt8(kRst);
+		OutputAfterCheckingFec(kRst);
 	}
 
 	void SendSyn()
 	{
 		assert(IsClient());
-		outputBuf_.appendInt8(kSyn);
-		OutputAfterCheckingFec();
+		//outputBuf_.appendInt8(kSyn);
+		OutputAfterCheckingFec(kSyn);
 	}
 
 	void SendAckAndConv()
 	{
 		assert(IsServer());
-		outputBuf_.appendInt8(kAck);
+		//outputBuf_.appendInt8(kAck);
 		outputBuf_.appendInt32(conv_);
-		OutputAfterCheckingFec();
+		OutputAfterCheckingFec(kAck);
 	}
 
 	void InitKcp(const IUINT32 conv, bool reinit = false)
@@ -1131,12 +1143,12 @@ private:
 	{
 		(void)kcp;
 		auto thisPtr = reinterpret_cast<KcpSession *>(user);
-		thisPtr->outputBuf_.appendInt8(kPsh);
+		//thisPtr->outputBuf_.appendInt8(kPsh);
 		thisPtr->outputBuf_.append(data, len);
-		return thisPtr->OutputAfterCheckingFec();
+		return thisPtr->OutputAfterCheckingFec(kPsh);
 	}
 
-	int OutputAfterCheckingFec()
+	int OutputAfterCheckingFec(PktTypeE pktType)
 	{
 		//if (!fecEnable_)
 		//{
@@ -1146,7 +1158,7 @@ private:
 		//	return 0;
 		//}
 		//else
-			return fec_.Output(&outputBuf_);
+			return fec_.Output(&outputBuf_, pktType);
 	}
 
 private:

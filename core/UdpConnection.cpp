@@ -112,7 +112,7 @@ UdpConnection::~UdpConnection()
 
 void UdpConnection::send(const void* data, int len,
 	//KcpSession::DataTypeE transmitMode /*= KcpSession::DataTypeE::kUnreliable*/)
-	KcpSession::TransmitModeE transmitMode /*= KcpSession::DataTypeE::kReliable*/)
+	kcpsess::TransmitModeE transmitMode /*= KcpSession::DataTypeE::kReliable*/)
 {
 	len = kcpSession_->Send(data, len, transmitMode);
 	if (len < 0)

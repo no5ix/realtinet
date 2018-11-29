@@ -166,7 +166,7 @@ void handle_udp_msg(int fd)
 
 				memset(sndBuf, 0, SND_BUFF_LEN);
 				((uint32_t*)sndBuf)[0] = nextRcvIndex - 1;
-				int result = kcpServer.Send(sndBuf, SND_BUFF_LEN, KcpSession::TransmitModeE::kUnreliable);
+				int result = kcpServer.Send(sndBuf, SND_BUFF_LEN, kcpsess::TransmitModeE::kUnreliable);
 				if (result < 0)
 				{
 					printf("kcpSession Send failed\n");
