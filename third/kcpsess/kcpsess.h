@@ -794,7 +794,7 @@ public:
 	IUINT32 Update(bool mustUpdateFlag = false)
 	{
 		if ((CheckTimeout() || curConnState_ == kConnecting) && IsClient())
-				SendSyn();
+			SendSyn();
 
 		auto curTimestamp = curTsMsFunc_();
 		if (kcp_ && IsKcpsessConnected())
@@ -969,7 +969,6 @@ private:
 			userBuf->append(inputBuf_.peek(), readableLen);
 			len = readableLen;
 		}
-
 		else if (pktType == kSyn)
 		{
 			assert(IsServer());
@@ -991,8 +990,9 @@ private:
 			{
 				InitKcp(rcvConv);
 			}
-			else if ((curConnState_ == kDisconnected || curConnState_ == kResetting)// cli timeout or resetting
-				&& (rcvConv != static_cast<int32_t>(conv_))) // server restart
+			else if ((curConnState_ == kDisconnected || curConnState_ == kResetting) // cli timeout or resetting
+				//&& (rcvConv != static_cast<int32_t>(conv_)) // server restart
+			)
 			{
 				MoveKcpDataToSndQ();
 				InitKcp(rcvConv, true);
