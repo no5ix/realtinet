@@ -142,6 +142,7 @@ void handle_udp_msg(int fd)
 			if (len < 0 && !isSimulatingPackageLoss)
 			{
 				printf("kcpSession Recv failed, Recv() = %d \n", len);
+				return;
 			}
 			else if (len > 0)
 			{

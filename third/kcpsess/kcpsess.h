@@ -737,8 +737,8 @@ public:
 public:
 	enum ConnectionStateE { kDisconnected, kConnecting, kConnected, kDisconnecting, kResetting };
 	enum RoleTypeE { kSrv, kCli };
-	enum TransmitModeE { kUnreliable = 88, kReliable, kHeartbeat };
-	enum PktTypeE { kSyn = 66, kAck, kPsh, kFin, kRst };
+	enum TransmitModeE { kUnreliable = 88, kReliable };
+	enum PktTypeE { kSyn = 66, kAck, kPsh, kFin, kRst, kHeartbeat };
 
 	typedef std::function<InputData()> InputFunction;
 	typedef std::function<IUINT32()> CurrentTimestampMsCallBack;
@@ -810,14 +810,14 @@ public:
 	}
 
 	// returns below zero for error
-	int Send(const void* data, int len, TransmitModeE dataType = kReliable)
+	int Send(const void* data, int len, TransmitModeE transmitMode = kReliable)
 	{
 		CheckTimeout();
 		assert(data != nullptr);
 		assert(len > 0);
-		assert(dataType == kReliable || dataType == kUnreliable);
+		assert(transmitMode == kReliable || transmitMode == kUnreliable);
 
-		if (dataType == kUnreliable)
+		if (transmitMode == kUnreliable)
 		{
 			if (!fecEnable_)
 				assert(len <= 1460 - 1);
@@ -829,7 +829,7 @@ public:
 			if (!IsKcpsessConnected() && IsClient())
 				SendSyn();
 		}
-		else if (dataType == kReliable)
+		else if (transmitMode == kReliable)
 		{
 			if (!IsKcpsessConnected() && IsClient())
 			{
@@ -930,90 +930,81 @@ private:
 	void DoRecv(Buf* userBuf, int& len, int readableLen)
 	{
 		CheckTimeout();
-		auto dataType = inputBuf_.readInt8();
+		auto pktType = inputBuf_.readInt8();
 		readableLen -= 1;
-		if (dataType == kUnreliable)
+		if (pktType == kUnreliable)
 		{
 			userBuf->append(inputBuf_.peek(), readableLen);
 			len = readableLen;
 		}
-		else if (dataType == kReliable)
-		{
-			auto pktType = inputBuf_.readInt8();
-			readableLen -= 1;
-			if (pktType == kSyn)
-			{
-				assert(IsServer());
-				if (!IsKcpsessConnected())
-				{
-					SetKcpConnectState(kConnected);
-					InitKcp(GetNewConv());
-				}
-				//else
-				//{
-				//	InitKcp(conv_, true);
-				//}
-				SendAckAndConv();
-				len = 0;
-			}
-			else if (pktType == kAck)
-			{
-				assert(IsClient());
-				int32_t rcvConv = inputBuf_.readInt32();
-				readableLen -= 4;
 
-				//if (!IsKcpsessConnected())
-				if (kcpConnState_ == kConnecting)
-				{
-					InitKcp(rcvConv);
-				}
-				else if (kcpConnState_ == kDisconnected) // cli timeout
-				{
-					if (rcvConv != static_cast<int32_t>(conv_))
-					{
-						// FIXME : 把kcp中的还未确认或将要发送的数据移出来
-						InitKcp(rcvConv, true);
-					}
-				}
+		else if (pktType == kSyn)
+		{
+			assert(IsServer());
+			if (!IsKcpsessConnected())
+			{
 				SetKcpConnectState(kConnected);
+				InitKcp(GetNewConv());
+			}
+			//else
+			//{
+			//	InitKcp(conv_, true);
+			//}
+			SendAckAndConv();
+			len = 0;
+		}
+		else if (pktType == kAck)
+		{
+			assert(IsClient());
+			int32_t rcvConv = inputBuf_.readInt32();
+			readableLen -= 4;
+
+			if (kcpConnState_ == kConnecting)
+			{
+				InitKcp(rcvConv);
+			}
+			else if (kcpConnState_ == kDisconnected) // cli timeout
+			{
+				if (rcvConv != static_cast<int32_t>(conv_)) // server restart
+				{
+					// FIXME : 把kcp中的还未确认或将要发送的数据移出来
+					InitKcp(rcvConv, true);
+				}
+			}
+			SetKcpConnectState(kConnected);
+			len = 0;
+		}
+		else if (pktType == kRst)
+		{
+			assert(IsClient());
+			if (IsKcpsessConnected() || kcpConnState_ == kConnecting)
+			{
+				SetKcpConnectState(kResetting);
+				SendSyn();
+			}
+			len = 0;
+		}
+		else if (pktType == kPsh)
+		{
+			if (IsKcpsessConnected())
+			{
+				int result = ikcp_input(kcp_, inputBuf_.peek(), readableLen);
+				if (result == 0)
+				{
+					Update(true);
+					len = KcpRecv(userBuf); // if err, -1, -2, -3
+				}
+				else // if (result < 0)
+					len = result - 3; // ikcp_input err, -4, -5, -6
+			}
+			else  // pktType == kPsh, but kcp not connected
+			{
+				if (IsServer())
+					SendRst();
 				len = 0;
-			}
-			else if (pktType == kRst)
-			{
-				assert(IsClient());
-				if (IsKcpsessConnected() || kcpConnState_ == kConnecting)
-				{
-					SetKcpConnectState(kResetting);
-					SendSyn();
-				}
-				len = 0;
-			}
-			else if (pktType == kPsh)
-			{
-				if (IsKcpsessConnected())
-				{
-					int result = ikcp_input(kcp_, inputBuf_.peek(), readableLen);
-					if (result == 0)
-					{
-						Update(true);
-						len = KcpRecv(userBuf); // if err, -1, -2, -3
-					}
-					else // if (result < 0)
-						len = result - 3; // ikcp_input err, -4, -5, -6
-				}
-				else  // pktType == kPsh, but kcp not connected
-				{
-					if (IsServer())
-						SendRst();
-					len = 0;
-				}
-			}
-			else
-			{
-				len = -8; // pktType err
 			}
 		}
-		else if (dataType == kHeartbeat)
+		else if (pktType == kHeartbeat)
 		{
 			if (IsServer())
 			{
@@ -1026,7 +1017,7 @@ private:
 		}
 		else
 		{
-			len = -9; // dataType err
+			len = -7; // pktType err
 		}
 
 		UpdateLastRcvDataTs();
@@ -1037,8 +1028,6 @@ private:
 
 	void SendHeartbeat()
 	{
-		//assert(IsClient());
-		//outputBuf_.appendInt8(kReliable);
 		outputBuf_.appendInt8(kHeartbeat);
 		OutputAfterCheckingFec();
 	}
@@ -1046,7 +1035,6 @@ private:
 	void SendRst()
 	{
 		assert(IsServer());
-		outputBuf_.appendInt8(kReliable);
 		outputBuf_.appendInt8(kRst);
 		OutputAfterCheckingFec();
 	}
@@ -1054,7 +1042,6 @@ private:
 	void SendSyn()
 	{
 		assert(IsClient());
-		outputBuf_.appendInt8(kReliable);
 		outputBuf_.appendInt8(kSyn);
 		OutputAfterCheckingFec();
 	}
@@ -1062,7 +1049,6 @@ private:
 	void SendAckAndConv()
 	{
 		assert(IsServer());
-		outputBuf_.appendInt8(kReliable);
 		outputBuf_.appendInt8(kAck);
 		outputBuf_.appendInt32(conv_);
 		OutputAfterCheckingFec();
@@ -1107,7 +1093,6 @@ private:
 		(void)kcp;
 		auto thisPtr = reinterpret_cast<KcpSession *>(user);
 
-		thisPtr->outputBuf_.appendInt8(kReliable);
 		thisPtr->outputBuf_.appendInt8(kPsh);
 		thisPtr->outputBuf_.append(data, len);
 		return thisPtr->OutputAfterCheckingFec();

@@ -139,6 +139,7 @@ void udp_msg_sender(int fd, struct sockaddr* dst)
 			if (len < 0)
 			{
 				printf("kcpSession Recv failed, Recv() = %d \n", len);
+				return;
 			}
 			else if (len > 0)
 			{

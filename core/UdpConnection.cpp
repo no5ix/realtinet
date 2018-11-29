@@ -161,7 +161,7 @@ void UdpConnection::KcpSessionUpdate()
 
 void UdpConnection::DoSend(const void* data, int len)
 {
-	if (state_ == kConnected)
+	//if (state_ == kConnected)
 	{
 		if (loop_->isInLoopThread())
 		{
