@@ -116,6 +116,8 @@ namespace muduo
 
 		private:
 
+			void onKcpsessConnection(const kcpsess::KcpSessionPtr& curKcpsess);
+
 			void KcpSessionUpdate();
 			void DoSend(const void* message, int len);
 			kcpsess::KcpSession::InputData DoRecv();
@@ -156,15 +158,14 @@ namespace muduo
 			kcpsess::Buf kcpsessRcvBuf_;
 
 			// kcp
-			std::unique_ptr<kcpsess::KcpSession> kcpSession_;
+			std::shared_ptr<kcpsess::KcpSession> kcpSession_;
 			TimerId curKcpsessUpTimerId_;
 			Buffer* firstRcvBuf_;
-			bool isCliKcpsessConned_;
+			//bool isCliKcpsessConned_;
 		};
 
 		typedef std::shared_ptr<UdpConnection> UdpConnectionPtr;
 
 	}
 }
-
 #endif  // MUDUO_NET_TCPCONNECTION_H

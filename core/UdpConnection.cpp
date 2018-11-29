@@ -20,6 +20,7 @@
 
 using namespace muduo;
 using namespace muduo::net;
+
 using kcpsess::KcpSession;
 
 
@@ -61,7 +62,7 @@ UdpConnection::UdpConnection(const kcpsess::KcpSession::RoleTypeE role,
 	localAddr_(localAddr),
 	peerAddr_(peerAddr),
 	firstRcvBuf_(firstRcvBuf),
-	isCliKcpsessConned_(false),
+	//isCliKcpsessConned_(false),
 	kcpSession_(new KcpSession(
 		role,
 		std::bind(&UdpConnection::DoSend, this, _1, _2),
@@ -77,8 +78,22 @@ UdpConnection::UdpConnection(const kcpsess::KcpSession::RoleTypeE role,
 		std::bind(&UdpConnection::handleError, this));
 	LOG_DEBUG << "UdpConnection::ctor[" << name_ << "] at " << this
 		<< " fd=" << socket_->fd();
-	
+
+
+	kcpSession_->setConnectionCallback(std::bind(&UdpConnection::onKcpsessConnection, this, _1));
 	KcpSessionUpdate();
+}
+
+void UdpConnection::onKcpsessConnection(const kcpsess::KcpSessionPtr& curKcpsess)
+{
+	LOG_INFO << localAddress().toIpPort() << " -> "
+		<< peerAddress().toIpPort() << " is "
+		<< (curKcpsess->IsKcpsessConnected() ? "UP" : "DOWN");
+	//if (curKcpsess->IsKcpsessConnected())
+	connectionCallback_(shared_from_this());
+	//else
+	//if (!curKcpsess->IsKcpsessConnected())
+	//	handleClose();
 }
 
 UdpConnection::~UdpConnection()
@@ -138,25 +153,23 @@ void UdpConnection::handleRead(Timestamp receiveTime)
 
 void UdpConnection::KcpSessionUpdate()
 {
-	//LOG_INFO << "call KcpSessionUpdate";
-
-	auto kcpsessUpFunc = [&]() {
+	auto kcpsessUpdateFunc = [&]() {
 		curKcpsessUpTimerId_ = loop_->runAt(Timestamp(kcpSession_->Update() * 1000), [&]() {
-			KcpSessionUpdate(); 
-			if (kcpSession_->CheckTimeout())
+			KcpSessionUpdate();
+			if (!kcpSession_->CheckCanSend() || kcpSession_->CheckTimeout())
 				handleClose();
-			if (kcpSession_->IsClient() && !isCliKcpsessConned_ && kcpSession_->IsKcpsessConnected())
-			{
-				isCliKcpsessConned_ = true;
-				connectionCallback_(shared_from_this());
-			}
+			//if (kcpSession_->IsClient() && !isCliKcpsessConned_ && kcpSession_->IsKcpsessConnected())
+			//{
+			//	isCliKcpsessConned_ = true;
+			//	connectionCallback_(shared_from_this());
+			//}
 		});
 	};
 
 	if (loop_->isInLoopThread())
-		kcpsessUpFunc();
+		kcpsessUpdateFunc();
 	else
-		loop_->runInLoop([&]() { kcpsessUpFunc(); });
+		loop_->runInLoop([&]() { kcpsessUpdateFunc(); });
 }
 
 void UdpConnection::DoSend(const void* data, int len)
@@ -328,7 +341,7 @@ void UdpConnection::connectEstablished()
 
 	if (kcpSession_->GetRoleType() == KcpSession::RoleTypeE::kSrv)
 	{
-		connectionCallback_(shared_from_this());
+		//connectionCallback_(shared_from_this());
 		handleRead(Timestamp::now()); // for the first recv data, see @firstRcvBuf_
 	}
 }

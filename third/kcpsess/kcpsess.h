@@ -551,8 +551,10 @@ private:
 	static const char kCRLF[];
 };
 
-
+class KcpSession;
+typedef std::shared_ptr<KcpSession> KcpSessionPtr;
 typedef std::function<void(const void* pendingSendData, int pendingSendDataLen)> OutputFunction;
+typedef std::function<void(const KcpSessionPtr&)> KcpSessionConnectionCallback;
 
 class Fec
 {
@@ -649,7 +651,8 @@ public:
 						inputFrgMap_.clear();
 
 					if (isHeadFrg || inputFrgMap_.find(rcvSn - 1) != inputFrgMap_.end())
-						inputFrgMap_.emplace(std::make_pair(rcvSn, std::string(iBuf->peek() + kDataLen, iBuf->peekInt16())));
+						inputFrgMap_.emplace(std::make_pair(
+							rcvSn, std::string(iBuf->peek() + kDataLen, iBuf->peekInt16())));
 
 					discardRcvedData();
 				}
@@ -716,7 +719,7 @@ private:
 	bool isFinishedThisRound_;
 };
 
-class KcpSession
+class KcpSession : public std::enable_shared_from_this<KcpSession>
 {
 public:
 	struct InputData
@@ -758,7 +761,7 @@ public:
 		userInputFunc_(userInputFunc),
 		curTsMsCb_(currentTimestampMsCb),
 		kcp_(nullptr),
-		kcpConnState_(kConnecting),
+		curConnState_(kConnecting),
 		fecEnable_(fecEnable),
 		fec_(userOutputFunc_, std::bind(&KcpSession::DoRecv, this, std::placeholders::_1,
 			std::placeholders::_2, std::placeholders::_3)),
@@ -900,7 +903,9 @@ public:
 
 	RoleTypeE GetRoleType() const { return role_; }
 
-	bool IsKcpsessConnected() const { return kcpConnState_ == kConnected; }
+	bool IsKcpsessConnected() const { return curConnState_ == kConnected; }
+
+	void setConnectionCallback(KcpSessionConnectionCallback cb) { connectionCallback_ = std::move(cb); }
 
 	// should set before Send()
 	void SetKcpConfig(const int sndWnd = 128, const int rcvWnd = 128, const int maxWaitSndCount = 512,
@@ -916,8 +921,8 @@ public:
 	bool CheckTimeout()
 	{
 		bool isTimeout = (curTsMsCb_() - lastRcvDataTs_) >= timeoutMs_;
-		if (isTimeout)
-			SetKcpConnectState(kDisconnected);
+		if (isTimeout && curConnState_ != kConnecting)
+			SetConnState(kDisconnected);
 		return isTimeout;
 	}
 
@@ -943,13 +948,9 @@ private:
 			assert(IsServer());
 			if (!IsKcpsessConnected())
 			{
-				SetKcpConnectState(kConnected);
+				SetConnState(kConnected);
 				InitKcp(GetNewConv());
 			}
-			//else
-			//{
-			//	InitKcp(conv_, true);
-			//}
 			SendAckAndConv();
 			len = 0;
 		}
@@ -959,27 +960,25 @@ private:
 			int32_t rcvConv = inputBuf_.readInt32();
 			readableLen -= 4;
 
-			if (kcpConnState_ == kConnecting)
+			if (curConnState_ == kConnecting)
 			{
 				InitKcp(rcvConv);
 			}
-			else if (kcpConnState_ == kDisconnected) // cli timeout
+			else if (curConnState_ == kDisconnected // cli timeout
+				&& (rcvConv != static_cast<int32_t>(conv_))) // server restart
 			{
-				if (rcvConv != static_cast<int32_t>(conv_)) // server restart
-				{
-					// FIXME : 把kcp中的还未确认或将要发送的数据移出来
-					InitKcp(rcvConv, true);
-				}
+				// FIXME : transfer data from kcp snd_buf and snd_queue
+				InitKcp(rcvConv, true);
 			}
-			SetKcpConnectState(kConnected);
+			SetConnState(kConnected);
 			len = 0;
 		}
 		else if (pktType == kRst)
 		{
 			assert(IsClient());
-			if (IsKcpsessConnected() || kcpConnState_ == kConnecting)
+			if (IsKcpsessConnected() || curConnState_ == kConnecting)
 			{
-				SetKcpConnectState(kResetting);
+				SetConnState(kResetting);
 				SendSyn();
 			}
 			len = 0;
@@ -1074,7 +1073,12 @@ private:
 		return newConv++;
 	}
 
-	void SetKcpConnectState(ConnectionStateE s) { kcpConnState_ = s; }
+	void SetConnState(const ConnectionStateE s)
+	{
+		if (connectionCallback_ && curConnState_ != s && (s == kConnected || s == kDisconnected))
+			connectionCallback_(shared_from_this());
+		curConnState_ = s;
+	}
 
 	int KcpRecv(Buf* userBuf)
 	{
@@ -1115,7 +1119,7 @@ private:
 	ikcpcb* kcp_;
 	InputFunction userInputFunc_;
 	OutputFunction userOutputFunc_;
-	ConnectionStateE kcpConnState_;
+	ConnectionStateE curConnState_;
 	Buf outputBuf_;
 	Buf inputBuf_;
 	CurrentTimestampMsCallBack curTsMsCb_;
@@ -1127,6 +1131,7 @@ private:
 	Fec fec_;
 	IUINT32 nextUpdateTs_;
 	IUINT32 lastRcvDataTs_;
+	KcpSessionConnectionCallback connectionCallback_;
 
 private:
 	// kcp config...
@@ -1141,6 +1146,5 @@ private:
 	int mtu_;
 	int rx_minrto_;
 };
-typedef std::shared_ptr<KcpSession> KcpSessionPtr;
 
 }
