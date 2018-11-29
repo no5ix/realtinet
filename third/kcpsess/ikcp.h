@@ -573,6 +573,7 @@ void ikcp_allocator(void* (*new_malloc)(size_t), void (*new_free)(void*));
 // read conv
 IUINT32 ikcp_getconv(const void *ptr);
 
+/*static*/ void ikcp_segment_delete(ikcpcb *kcp, struct IKCPSEG *seg);
 
 #ifdef __cplusplus
 }

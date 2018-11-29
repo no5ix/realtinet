@@ -750,7 +750,7 @@ public:
 	KcpSession(const RoleTypeE role,
 		const OutputFunction& userOutputFunc,
 		const InputFunction& userInputFunc,
-		const CurrentTimestampMsCallBack& currentTimestampMsCb,
+		const CurrentTimestampMsCallBack& currentTimestampMsFunc,
 		IUINT32 timeoutMs = 888,
 		bool fecEnable = true)
 		:
@@ -759,14 +759,14 @@ public:
 		timeoutMs_(timeoutMs),
 		userOutputFunc_(userOutputFunc),
 		userInputFunc_(userInputFunc),
-		curTsMsCb_(currentTimestampMsCb),
+		curTsMsFunc_(currentTimestampMsFunc),
 		kcp_(nullptr),
 		curConnState_(kConnecting),
 		fecEnable_(fecEnable),
 		fec_(userOutputFunc_, std::bind(&KcpSession::DoRecv, this, std::placeholders::_1,
 			std::placeholders::_2, std::placeholders::_3)),
 		nextUpdateTs_(0),
-		lastRcvDataTs_(curTsMsCb_()),
+		lastRcvDataTs_(curTsMsFunc_()),
 		sndWnd_(128),
 		rcvWnd_(128),
 		maxWaitSndCount_(2 * sndWnd_),
@@ -793,14 +793,15 @@ public:
 	// update then returns next update timestamp in ms
 	IUINT32 Update(bool mustUpdateFlag = false)
 	{
-		CheckTimeout();
-		auto curTimestamp = curTsMsCb_();
+		if ((CheckTimeout() || curConnState_ == kConnecting) && IsClient())
+				SendSyn();
 
+		auto curTimestamp = curTsMsFunc_();
 		if (kcp_ && IsKcpsessConnected())
 		{
+			FlushSndQueueBeforeConned();
 			if (IsClient() && ikcp_waitsnd(kcp_) == 0)
 				SendHeartbeat();
-
 			if (curTimestamp >= nextUpdateTs_ || mustUpdateFlag)
 			{
 				ikcp_update(kcp_, curTimestamp);
@@ -841,16 +842,7 @@ public:
 			}
 			else if (IsKcpsessConnected())
 			{
-				while (sndQueueBeforeConned_.size() > 0)
-				{
-					std::string msg = sndQueueBeforeConned_.front();
-					int sendRet = ikcp_send(kcp_, msg.c_str(), static_cast<int>(msg.size()));
-					if (sendRet < 0)
-						return sendRet; // ikcp_send err
-					else
-						Update(true);
-					sndQueueBeforeConned_.pop();
-				}
+				FlushSndQueueBeforeConned();
 
 				int result = ikcp_send(kcp_, static_cast<const char*>(data), len);
 				if (result < 0)
@@ -920,8 +912,8 @@ public:
 
 	bool CheckTimeout()
 	{
-		bool isTimeout = (curTsMsCb_() - lastRcvDataTs_) >= timeoutMs_;
-		if (isTimeout && curConnState_ != kConnecting)
+		bool isTimeout = (curTsMsFunc_() - lastRcvDataTs_) >= timeoutMs_;
+		if (isTimeout && (curConnState_ != kConnecting && curConnState_ != kResetting))
 			SetConnState(kDisconnected);
 		return isTimeout;
 	}
@@ -931,6 +923,41 @@ public:
 
 private:
 	friend int Fec::Output(Buf*);
+
+	int FlushSndQueueBeforeConned()
+	{
+		assert(kcp_);
+		while (sndQueueBeforeConned_.size() > 0)
+		{
+			std::string msg = sndQueueBeforeConned_.front();
+			int sendRet = ikcp_send(kcp_, msg.c_str(), static_cast<int>(msg.size()));
+			if (sendRet < 0)
+				return sendRet; // ikcp_send err
+			ikcp_update(kcp_, curTsMsFunc_());
+			sndQueueBeforeConned_.pop();
+		}
+		return 0;
+	}
+
+	void MoveKcpDataToSndQ()
+	{
+		assert(kcp_);
+		IKCPSEG *seg;
+		while (!iqueue_is_empty(&kcp_->snd_buf))
+		{
+			seg = iqueue_entry(kcp_->snd_buf.next, IKCPSEG, node);
+			sndQueueBeforeConned_.emplace(std::string(seg->data, seg->len));
+			iqueue_del(&seg->node);
+			ikcp_segment_delete(kcp_, seg);
+		}
+		while (!iqueue_is_empty(&kcp_->snd_queue))
+		{
+			seg = iqueue_entry(kcp_->snd_queue.next, IKCPSEG, node);
+			sndQueueBeforeConned_.emplace(std::string(seg->data, seg->len));
+			iqueue_del(&seg->node);
+			ikcp_segment_delete(kcp_, seg);
+		}
+	}
 
 	void DoRecv(Buf* userBuf, int& len, int readableLen)
 	{
@@ -964,10 +991,10 @@ private:
 			{
 				InitKcp(rcvConv);
 			}
-			else if (curConnState_ == kDisconnected // cli timeout
+			else if ((curConnState_ == kDisconnected || curConnState_ == kResetting)// cli timeout or resetting
 				&& (rcvConv != static_cast<int32_t>(conv_))) // server restart
 			{
-				// FIXME : transfer data from kcp snd_buf and snd_queue
+				MoveKcpDataToSndQ();
 				InitKcp(rcvConv, true);
 			}
 			SetConnState(kConnected);
@@ -1023,7 +1050,7 @@ private:
 		inputBuf_.retrieve(readableLen);
 	}
 
-	void UpdateLastRcvDataTs() { lastRcvDataTs_ = curTsMsCb_(); }
+	void UpdateLastRcvDataTs() { lastRcvDataTs_ = curTsMsFunc_(); }
 
 	void SendHeartbeat()
 	{
@@ -1122,7 +1149,7 @@ private:
 	ConnectionStateE curConnState_;
 	Buf outputBuf_;
 	Buf inputBuf_;
-	CurrentTimestampMsCallBack curTsMsCb_;
+	CurrentTimestampMsCallBack curTsMsFunc_;
 	IUINT32 conv_;
 	IUINT32 timeoutMs_;
 	RoleTypeE role_;

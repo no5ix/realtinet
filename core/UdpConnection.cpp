@@ -156,7 +156,7 @@ void UdpConnection::KcpSessionUpdate()
 	auto kcpsessUpdateFunc = [&]() {
 		curKcpsessUpTimerId_ = loop_->runAt(Timestamp(kcpSession_->Update() * 1000), [&]() {
 			KcpSessionUpdate();
-			if (!kcpSession_->CheckCanSend() || kcpSession_->CheckTimeout())
+			if (!kcpSession_->CheckCanSend() || (kcpSession_->CheckTimeout() && kcpSession_->IsServer()))
 				handleClose();
 			//if (kcpSession_->IsClient() && !isCliKcpsessConned_ && kcpSession_->IsKcpsessConnected())
 			//{
@@ -379,13 +379,14 @@ void UdpConnection::handleError()
 	int err = sockets::getSocketError(channel_->fd());
 	if (err == ECONNREFUSED)
 	{
-		LOG_INFO << peerAddr_.toIpPort() << " is disconnected";
+		//LOG_INFO << peerAddr_.toIpPort() << " is disconnected";
+		;
 	}
 	else
 	{
 		LOG_ERROR << "UdpConnection::handleError [" << name_
 			<< "] - SO_ERROR = " << err << " " << strerror_tl(err);
+		//handleClose();
 	}
-	handleClose();
 }
 

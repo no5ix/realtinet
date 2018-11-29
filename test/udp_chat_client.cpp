@@ -25,7 +25,7 @@ public:
 			std::bind(&UdpChatClient::onConnection, this, _1));
 		client_.setMessageCallback(
 			std::bind(&UdpLengthHeaderCodec::onMessage, &codec_, _1, _2, _3));
-		client_.enableRetry();
+		//client_.enableRetry();
 	}
 
 	void connect()
