@@ -156,10 +156,10 @@ void handle_udp_msg(int fd)
 				if (index == testPassIndex)
 					printf("test passes, yay! \n please close me ...\n");
 
-				if (kcpServer.IsKcpsessConnected() && index != nextRcvIndex)
+				if (kcpServer.IsConnected() && index != nextRcvIndex)
 				{
 					// 如果收到的包不连续
-					printf("ERROR index != nextRcvIndex : %d != %d, kcpServer.IsKcpConnected() = %d\n", (int)index, (int)nextRcvIndex, (kcpServer.IsKcpsessConnected() ? 1 : 0));
+					printf("ERROR index != nextRcvIndex : %d != %d, kcpServer.IsKcpConnected() = %d\n", (int)index, (int)nextRcvIndex, (kcpServer.IsConnected() ? 1 : 0));
 					return;
 				}
 				++nextRcvIndex;

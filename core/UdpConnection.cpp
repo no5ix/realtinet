@@ -88,7 +88,7 @@ void UdpConnection::onKcpsessConnection(const kcpsess::KcpSessionPtr& curKcpsess
 {
 	LOG_INFO << localAddress().toIpPort() << " -> "
 		<< peerAddress().toIpPort() << " is "
-		<< (curKcpsess->IsKcpsessConnected() ? "UP" : "DOWN");
+		<< (curKcpsess->IsConnected() ? "UP" : "DOWN");
 	//if (curKcpsess->IsKcpsessConnected())
 	connectionCallback_(shared_from_this());
 	//else
@@ -156,7 +156,7 @@ void UdpConnection::KcpSessionUpdate()
 	auto kcpsessUpdateFunc = [&]() {
 		curKcpsessUpTimerId_ = loop_->runAt(Timestamp(kcpSession_->Update() * 1000), [&]() {
 			KcpSessionUpdate();
-			if (!kcpSession_->CheckCanSend() || (kcpSession_->CheckTimeout() && kcpSession_->IsServer()))
+			if (!kcpSession_->CheckCanSend()/* || (kcpSession_->CheckTimeout() && kcpSession_->IsServer())*/)
 				handleClose();
 			//if (kcpSession_->IsClient() && !isCliKcpsessConned_ && kcpSession_->IsKcpsessConnected())
 			//{
@@ -339,7 +339,7 @@ void UdpConnection::connectEstablished()
 	channel_->tie(shared_from_this());
 	channel_->enableReading();
 
-	if (kcpSession_->GetRoleType() == KcpSession::RoleTypeE::kSrv)
+	if (kcpSession_->IsServer())
 	{
 		//connectionCallback_(shared_from_this());
 		handleRead(Timestamp::now()); // for the first recv data, see @firstRcvBuf_
