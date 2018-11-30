@@ -116,7 +116,7 @@ namespace muduo
 
 		private:
 
-			void onKcpsessConnection(const kcpsess::KcpSessionPtr& curKcpsess);
+			void onKcpsessConnection(std::deque<std::string>* pendingSendDataDeque);
 
 			void KcpSessionUpdate();
 			void DoSend(const void* message, int len);

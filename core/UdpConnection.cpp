@@ -67,7 +67,7 @@ UdpConnection::UdpConnection(const kcpsess::KcpSession::RoleTypeE role,
 		role,
 		std::bind(&UdpConnection::DoSend, this, _1, _2),
 		std::bind(&UdpConnection::DoRecv, this),
-		[]() { return static_cast<IUINT32>(
+		[]() { return static_cast<int>(
 		(Timestamp::now().microSecondsSinceEpoch() / 1000)); }))
 {
 	channel_->setReadCallback(
@@ -83,16 +83,16 @@ UdpConnection::UdpConnection(const kcpsess::KcpSession::RoleTypeE role,
 	kcpSession_->setConnectionCallback(std::bind(&UdpConnection::onKcpsessConnection, this, _1));
 }
 
-void UdpConnection::onKcpsessConnection(const kcpsess::KcpSessionPtr& curKcpsess)
+void UdpConnection::onKcpsessConnection(std::deque<std::string>* pendingSendDataDeque)
 {
 	LOG_INFO << localAddress().toIpPort() << " -> "
 		<< peerAddress().toIpPort() << " is "
-		<< (curKcpsess->IsConnected() ? "UP" : "DOWN");
-	//if (curKcpsess->IsKcpsessConnected())
-	connectionCallback_(shared_from_this());
-	//else
-	//if (!curKcpsess->IsKcpsessConnected())
-	//	handleClose();
+		<< (kcpSession_->IsConnected() ? "UP" : "DOWN");
+	if (kcpSession_->IsConnected())
+		connectionCallback_(shared_from_this());
+	else if (!kcpSession_->IsConnected())
+		handleClose();
+		//handlePendingSendDataDeque();
 }
 
 UdpConnection::~UdpConnection()
@@ -153,7 +153,13 @@ void UdpConnection::handleRead(Timestamp receiveTime)
 void UdpConnection::KcpSessionUpdate()
 {
 	auto kcpsessUpdateFunc = [&]() {
-		curKcpsessUpTimerId_ = loop_->runAt(Timestamp(kcpSession_->Update() * 1000), [&]() {
+		auto nextUpdateTimeMs = kcpSession_->Update();
+		if (nextUpdateTimeMs < 0)
+		{
+			handleClose();
+			return;
+		}
+		curKcpsessUpTimerId_ = loop_->runAt(Timestamp(nextUpdateTimeMs * 1000), [&]() {
 			KcpSessionUpdate();
 			if (!kcpSession_->CheckCanSend()/* || (kcpSession_->CheckTimeout() && kcpSession_->IsServer())*/)
 				handleClose();
@@ -387,7 +393,7 @@ void UdpConnection::handleError()
 	{
 		LOG_ERROR << "UdpConnection::handleError [" << name_
 			<< "] - SO_ERROR = " << err << " " << strerror_tl(err);
-		//handleClose();
+		handleClose();
 	}
 }
 

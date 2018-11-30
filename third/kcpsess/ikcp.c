@@ -173,7 +173,7 @@ static IKCPSEG* ikcp_segment_new(ikcpcb *kcp, int size)
 }
 
 // delete a segment
-/*static*/ void ikcp_segment_delete(ikcpcb *kcp, IKCPSEG *seg)
+static void ikcp_segment_delete(ikcpcb *kcp, IKCPSEG *seg)
 {
 	ikcp_free(seg);
 }
