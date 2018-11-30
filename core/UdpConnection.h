@@ -120,7 +120,7 @@ namespace muduo
 
 			void KcpSessionUpdate();
 			void DoSend(const void* message, int len);
-			kcpsess::KcpSession::InputData DoRecv();
+			kcpsess::UserInputData DoRecv();
 
 			void handleRead( Timestamp receiveTime);
 			void handleClose();

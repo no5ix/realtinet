@@ -81,7 +81,6 @@ UdpConnection::UdpConnection(const kcpsess::KcpSession::RoleTypeE role,
 
 
 	kcpSession_->setConnectionCallback(std::bind(&UdpConnection::onKcpsessConnection, this, _1));
-	KcpSessionUpdate();
 }
 
 void UdpConnection::onKcpsessConnection(const kcpsess::KcpSessionPtr& curKcpsess)
@@ -193,7 +192,7 @@ void UdpConnection::DoSend(const void* data, int len)
 	}
 }
 
-KcpSession::InputData UdpConnection::DoRecv()
+kcpsess::UserInputData UdpConnection::DoRecv()
 {
 	int n = 0;
 	if (firstRcvBuf_)
@@ -216,7 +215,7 @@ KcpSession::InputData UdpConnection::DoRecv()
 			handleError();
 		}
 	}
-	return KcpSession::InputData(packetBuf_, n);
+	return kcpsess::UserInputData(packetBuf_, n);
 }
 
 void UdpConnection::sendInLoop(const void* data, size_t len)
@@ -338,6 +337,8 @@ void UdpConnection::connectEstablished()
 	setState(kConnected);
 	channel_->tie(shared_from_this());
 	channel_->enableReading();
+
+	KcpSessionUpdate();
 
 	if (kcpSession_->IsServer())
 	{

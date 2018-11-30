@@ -84,7 +84,7 @@ void udp_output(const void *buf, int len, int fd, struct sockaddr_in* dst)
 }
 
 bool isSimulatingPackageLoss = false;
-KcpSession::InputData udp_input(char* buf, int len, int fd, struct sockaddr_in* from)
+kcpsess::UserInputData udp_input(char* buf, int len, int fd, struct sockaddr_in* from)
 {
 	socklen_t fromAddrLen = sizeof(*from);
 	int recvLen = ::recvfrom(fd, buf, len, 0,
@@ -99,7 +99,7 @@ KcpSession::InputData udp_input(char* buf, int len, int fd, struct sockaddr_in* 
 			recvLen = 0;
 		}
 	}
-	return KcpSession::InputData(buf, recvLen);
+	return kcpsess::UserInputData(buf, recvLen);
 }
 
 void handle_udp_msg(int fd)
