@@ -65,7 +65,7 @@ namespace muduo
 			// void send(string&& message); // C++11
 			void send( const void* message, int len,
 				//kcpsess::KcpSession::TransmitModeE transmitMode = kcpsess::KcpSession::TransmitModeE::kUnreliable);
-				kcpsess::TransmitModeE transmitMode = kcpsess::TransmitModeE::kReliable);
+				kcpsess::KcpSession::TransmitModeE transmitMode = kcpsess::KcpSession::TransmitModeE::kReliable);
 
 			void send(const StringPiece& message)
 			{ send(message.data(), message.size()); }
@@ -120,7 +120,7 @@ namespace muduo
 
 			void KcpSessionUpdate();
 			void DoSend(const void* message, int len);
-			kcpsess::UserInputData DoRecv();
+			kcpsess::KcpSession::UserInputData DoRecv();
 
 			void handleRead( Timestamp receiveTime);
 			void handleClose();

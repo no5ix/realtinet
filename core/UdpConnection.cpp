@@ -111,7 +111,7 @@ UdpConnection::~UdpConnection()
 
 void UdpConnection::send(const void* data, int len,
 	//KcpSession::DataTypeE transmitMode /*= KcpSession::DataTypeE::kUnreliable*/)
-	kcpsess::TransmitModeE transmitMode /*= KcpSession::DataTypeE::kReliable*/)
+	kcpsess::KcpSession::TransmitModeE transmitMode /*= KcpSession::DataTypeE::kReliable*/)
 {
 	len = kcpSession_->Send(data, len, transmitMode);
 	if (len < 0)
@@ -198,7 +198,7 @@ void UdpConnection::DoSend(const void* data, int len)
 	}
 }
 
-kcpsess::UserInputData UdpConnection::DoRecv()
+KcpSession::UserInputData UdpConnection::DoRecv()
 {
 	int n = 0;
 	if (firstRcvBuf_)
@@ -221,7 +221,7 @@ kcpsess::UserInputData UdpConnection::DoRecv()
 			handleError();
 		}
 	}
-	return kcpsess::UserInputData(packetBuf_, n);
+	return KcpSession::UserInputData(packetBuf_, n);
 }
 
 void UdpConnection::sendInLoop(const void* data, size_t len)
