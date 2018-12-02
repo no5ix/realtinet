@@ -72,12 +72,12 @@ void udp_output(const void *buf, int len, int fd, struct sockaddr* dst)
 	::sendto(fd, (const char*)buf, len, 0, dst, sizeof(*dst));
 }
 
-KcpSession::UserInputData udp_input(char *buf, int len, int fd, struct sockaddr_in from)
+kcpsess::UserInputData udp_input(char *buf, int len, int fd, struct sockaddr_in from)
 {
 	socklen_t fromAddrLen = sizeof(from);
 	int recvLen = ::recvfrom(fd, buf, len, 0,
 		(struct sockaddr*)&from, &fromAddrLen);
-	return KcpSession::UserInputData(buf, recvLen);
+	return kcpsess::UserInputData(buf, recvLen);
 }
 
 
@@ -93,7 +93,7 @@ void udp_msg_sender(int fd, struct sockaddr* dst)
 	uint32_t index = 11;
 
 	KcpSession kcpClient(
-		KcpSession::RoleTypeE::kCli,
+		kcpsess::RoleTypeE::kCli,
 		std::bind(udp_output, std::placeholders::_1, std::placeholders::_2, fd, dst),
 		std::bind(udp_input, rcvBuf, RCV_BUFF_LEN, fd, std::ref(from)),
 		std::bind(iclock));

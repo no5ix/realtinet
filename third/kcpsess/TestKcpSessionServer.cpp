@@ -23,8 +23,8 @@ using kcpsess::KcpSession;
 
 #define SERVER_PORT 8888
 
-//#define SND_BUFF_LEN kcpsess::Fec::kMaxSeparatePktDataSize
-#define SND_BUFF_LEN 9567
+//#define SND_BUFF_LEN kcpsess::Fec::kMaxSepar`atePktDataSize
+#define SND_BUFF_LEN 1463
 
 #define RCV_BUFF_LEN 1500
 
@@ -84,7 +84,7 @@ void udp_output(const void *buf, int len, int fd, struct sockaddr_in* dst)
 }
 
 bool isSimulatingPackageLoss = false;
-KcpSession::UserInputData udp_input(char* buf, int len, int fd, struct sockaddr_in* from)
+kcpsess::UserInputData udp_input(char* buf, int len, int fd, struct sockaddr_in* from)
 {
 	socklen_t fromAddrLen = sizeof(*from);
 	int recvLen = ::recvfrom(fd, buf, len, 0,
@@ -96,10 +96,10 @@ KcpSession::UserInputData udp_input(char* buf, int len, int fd, struct sockaddr_
 		if (isSimulatingPackageLoss)
 		{
 			//printf("server: simulate package loss!!\n");
-			recvLen = 0;
+			//recvLen = 0;
 		}
 	}
-	return KcpSession::UserInputData(buf, recvLen);
+	return kcpsess::UserInputData(buf, recvLen);
 }
 
 void handle_udp_msg(int fd)
@@ -114,7 +114,7 @@ void handle_udp_msg(int fd)
 	uint32_t index = 0;
 
 	KcpSession kcpServer(
-		KcpSession::RoleTypeE::kSrv,
+		kcpsess::RoleTypeE::kSrv,
 		std::bind(udp_output, std::placeholders::_1, std::placeholders::_2, fd, clientAddr),
 		std::bind(udp_input, rcvBuf, RCV_BUFF_LEN, fd, clientAddr),
 		std::bind(iclock));
@@ -166,7 +166,8 @@ void handle_udp_msg(int fd)
 
 				memset(sndBuf, 0, SND_BUFF_LEN);
 				((uint32_t*)sndBuf)[0] = nextRcvIndex - 1;
-				int result = kcpServer.Send(sndBuf, SND_BUFF_LEN, KcpSession::TransmitModeE::kUnreliable);
+				int result = kcpServer.Send(sndBuf, SND_BUFF_LEN, kcpsess::TransmitModeE::kUnreliable);
+				//int result = kcpServer.Send(sndBuf, SND_BUFF_LEN);
 				if (result < 0)
 				{
 					printf("kcpSession Send failed\n");
