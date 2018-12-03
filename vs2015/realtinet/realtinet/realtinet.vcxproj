@@ -120,7 +120,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <Text Include="..\..\..\core\CMakeLists.txt" />
-    <Text Include="..\..\..\third\kcpsess\CMakeLists.txt" />
+    <Text Include="..\..\..\third\kcpp\CMakeLists.txt" />
     <Text Include="..\..\..\third\muduo\CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
@@ -143,15 +143,7 @@
     <ClCompile Include="..\..\..\test\tcp_chat_server.cpp" />
     <ClCompile Include="..\..\..\test\udp_chat_client.cpp" />
     <ClCompile Include="..\..\..\test\udp_chat_server.cpp" />
-    <ClCompile Include="..\..\..\third\kcpsess\ikcp.c" />
-    <ClCompile Include="..\..\..\third\kcpsess\TestKcpSessionClient.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\third\kcpsess\TestKcpSessionServer.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="..\..\..\third\kcpp\ikcp.c" />
     <ClCompile Include="..\..\..\third\muduo-win\src\base\async_logging.cc" />
     <ClCompile Include="..\..\..\third\muduo-win\src\base\config_file_reader.cc" />
     <ClCompile Include="..\..\..\third\muduo-win\src\base\count_down_latch.cc" />
@@ -339,8 +331,8 @@
     <ClInclude Include="..\..\..\core\UdpSocketsOps.h" />
     <ClInclude Include="..\..\..\test\tcp_codec.h" />
     <ClInclude Include="..\..\..\test\udp_codec.h" />
-    <ClInclude Include="..\..\..\third\kcpsess\ikcp.h" />
-    <ClInclude Include="..\..\..\third\kcpsess\kcpsess.h" />
+    <ClInclude Include="..\..\..\third\kcpp\ikcp.h" />
+    <ClInclude Include="..\..\..\third\kcpp\kcpp.h" />
     <ClInclude Include="..\..\..\third\muduo-win\src\alds\min_heap.h" />
     <ClInclude Include="..\..\..\third\muduo-win\src\base\async_logging.h" />
     <ClInclude Include="..\..\..\third\muduo-win\src\base\blocking_queue.h" />
@@ -552,8 +544,8 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\third\kcpsess\.gitignore" />
-    <None Include="..\..\..\third\kcpsess\README.md" />
+    <None Include="..\..\..\third\kcpp\.gitignore" />
+    <None Include="..\..\..\third\kcpp\README.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

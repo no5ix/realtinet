@@ -7,7 +7,7 @@
 # About This 
 
 <!-- - combine [kcp](https://github.com/skywind3000/kcp) with [muduo](https://github.com/chenshuo/muduo).  -->
-- realtinet = [kcp](https://github.com/skywind3000/kcp) + ([kcpsess](https://github.com/no5ix/kcpsess), a kcp session implementation) + [muduo](https://github.com/chenshuo/muduo) + (UDP support for muduo)
+- realtinet = [kcp](https://github.com/skywind3000/kcp) + ([kcpp](https://github.com/no5ix/kcpp), a kcp session implementation) + [muduo](https://github.com/chenshuo/muduo) + (UDP support for muduo)
 - used in [realtime-server](https://github.com/no5ix/realtime-server) (A open source realtime dedicated game server for FPS / MOBA ), [Video Preview 视频演示](https://github.com/no5ix/realtime-server/blob/master/img/UE4DemoScreenshot.gif)
 
 

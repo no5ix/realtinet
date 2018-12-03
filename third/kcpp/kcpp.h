@@ -147,7 +147,7 @@
 #endif
 
 
-namespace kcpsess
+namespace kcpp
 {
 
 // a light weight buf.
@@ -575,6 +575,7 @@ enum RoleTypeE { kSrv, kCli };
 enum ConnectionStateE { kConnecting, kConnected, kResetting, kReset };
 enum PktTypeE { kSyn = 66, kAck, kPsh, kRst };
 
+
 class Fec
 {
 public:
@@ -582,8 +583,7 @@ public:
 	Fec(const UserOutputFunction& userOutputFunc, const RecvFuncion& rcvFunc)
 		:
 		userOutputFunc_(userOutputFunc), rcvFunc_(rcvFunc), nextSndSn_(0), nextRcvSn_(0),
-		isFinishedThisRound_(true), on_(false), greedyMode_(false),
-		curPktLenLimit_(greedyMode_ ? kGreedyPktLenLimit : kRedundancyPktLenLimit_)
+		isThisRoundFinished_(true), on_(false), mss_(111)
 	{}
 
 	int Output(Buf* oBuf, PktTypeE pktType)
@@ -592,7 +592,7 @@ public:
 		if (pktType == static_cast<PktTypeE>(kUnreliable))
 		{
 			size_t frgCnt = 0;
-			if (curLen <= kUnreliableDataLenLimit)
+			if (curLen <= kUnreliableDataLenLimit + kFrgLen)
 				frgCnt = 1;
 			else
 				frgCnt = (curLen + kUnreliableDataLenLimit - 1) / kUnreliableDataLenLimit;
@@ -603,54 +603,26 @@ public:
 				return -1;
 			}
 
-			size_t curSize = 0;
+			size_t curDataLen = 0;
 			size_t curHeaderLen = frgCnt > 1 ? kUnreliableHeaderLen : (kUnreliableHeaderLen - kFrgLen);
+			size_t curDataLenLimit = kMaxMSS - curHeaderLen;
 			for (size_t i = 0; i < frgCnt; ++i)
 			{
-				curSize = curLen > kUnreliableDataLenLimit ? kUnreliableDataLenLimit : curLen;
-				oBuf->prependInt16(static_cast<int16_t>(curSize));
+				curDataLen = curLen > curDataLenLimit ? curDataLenLimit : curLen;
+				oBuf->prependInt16(static_cast<int16_t>(curDataLen));
 				if (frgCnt > 1)
 					oBuf->prependInt8(static_cast<int8_t>(frgCnt - i - 1));
 				oBuf->prependInt8(static_cast<int8_t>(frgCnt));
 				oBuf->prependInt32(nextSndSn_++);
 				oBuf->prependInt8(static_cast<int8_t>(kUnreliable));
-				outputPktDeque_.emplace_back(std::string(oBuf->peek(), curHeaderLen + curSize));
-				oBuf->retrieve(curHeaderLen + curSize);
-				curLen -= curSize;
+				outputPktDeque_.emplace_back(std::string(oBuf->peek(), curHeaderLen + curDataLen));
+				oBuf->retrieve(curHeaderLen + curDataLen);
+				curLen -= curDataLen;
 			}
 			assert(curLen == 0);
 			assert(oBuf->readableBytes() == 0);
 
-			for (size_t i = 1; i <= outputPktDeque_.size(); ++i)
-			{
-				auto curIt = outputPktDeque_.end() - i;
-				bool isFirst = curIt == outputPktDeque_.begin();
-				oBuf->prepend(*curIt);
-
-				size_t lastPktDataLen = 0;
-				if (!isFirst)
-					lastPktDataLen = (curIt - 1)->size();
-
-				if (curIt->size() >= curPktLenLimit_)
-				{
-					outputPktDeque_.erase(curIt);
-					--i;
-				}
-				if (oBuf->readableBytes() + lastPktDataLen >= curPktLenLimit_ || isFirst)
-				{
-					FlushOutputBuffer(oBuf);
-					if (frgCnt-- > 1)
-						continue;
-					break;
-				}
-			}
-
-			size_t sumOutputPktDequeLen = 0;
-			for (auto it = outputPktDeque_.begin(); it != outputPktDeque_.end(); ++it)
-			{
-				sumOutputPktDequeLen += it->size();
-				if (sumOutputPktDequeLen >= curPktLenLimit_) { outputPktDeque_.pop_front(); break; }
-			}
+			HandleFlush(oBuf, frgCnt);
 		}
 		else /*if(pktType != kUnreliable)*/
 		{
@@ -660,51 +632,34 @@ public:
 			outputPktDeque_.emplace_back(std::string(oBuf->peek(), kReliableHeaderLen + curLen));
 			oBuf->retrieveAll();
 
-			for (size_t i = 1; i <= outputPktDeque_.size(); ++i)
-			{
-				auto curIt = outputPktDeque_.end() - i;
-				bool isFirst = curIt == outputPktDeque_.begin();
-				oBuf->prepend(*curIt);
-
-				size_t lastPktDataLen = 0;
-				if (!isFirst)
-					lastPktDataLen = (curIt - 1)->size();
-
-				if (oBuf->readableBytes() + lastPktDataLen >= curPktLenLimit_ || isFirst)
-				{
-					if (oBuf->readableBytes() + lastPktDataLen >= curPktLenLimit_)
-						outputPktDeque_.pop_front();
-					FlushOutputBuffer(oBuf);
-					break;
-				}
-			}
+			HandleFlush(oBuf);
 		}
 		return 0;
 	}
 
 	bool Input(Buf* userBuf, int& len, Buf* iBuf)
 	{
-		bool hasData = IsAnyDataLeft(iBuf);
+		PktTypeE pktType = static_cast<PktTypeE>(0);
+		int32_t rcvSn = 0;
+		int8_t rcvFrgCnt = 0;
+		int8_t rcvFrg = 0;
+		int16_t dataLen = 0;
+
+		bool hasData = ParsePkt(iBuf, pktType, rcvSn, rcvFrgCnt, rcvFrg, dataLen);
+
 		if (hasData)
 		{
-			auto discardRcvedData = [&]() { iBuf->retrieve(iBuf->readInt16()); len = 0; };
-			isFinishedThisRound_ = false;
-			PktTypeE pktType = static_cast<PktTypeE>(iBuf->readInt8());
-			int32_t rcvSn = iBuf->readInt32();
+			auto discardRcvedData = [&]() { iBuf->retrieve(dataLen); len = 0; };
+			isThisRoundFinished_ = false;
 
 			if (pktType == static_cast<PktTypeE>(kUnreliable))
 			{
-				int8_t rcvFrgCnt = iBuf->readInt8();
-				int8_t rcvFrg = 0;
-				if (rcvFrgCnt > 1)
-					rcvFrg = iBuf->readInt8();
-
 				if (rcvSn >= nextRcvSn_)
 				{
 					nextRcvSn_ = rcvSn + 1;
 
 					if (rcvFrgCnt == 1)
-						rcvFunc_(userBuf, len, iBuf->readInt16(), pktType);
+						rcvFunc_(userBuf, len, dataLen, pktType);
 					else
 					{
 						if (rcvFrg != 0)
@@ -715,7 +670,7 @@ public:
 
 							if (isHeadFrg || inputFrgMap_.find(rcvSn - 1) != inputFrgMap_.end())
 								inputFrgMap_.emplace(std::make_pair(
-									rcvSn, std::string(iBuf->peek() + kDataLen, iBuf->peekInt16())));
+									rcvSn, std::string(iBuf->peek(), dataLen)));
 
 							discardRcvedData();
 						}
@@ -723,7 +678,7 @@ public:
 						{
 							if (inputFrgMap_.find(rcvSn - 1) != inputFrgMap_.end())
 							{
-								int sumDataLen = iBuf->readInt16();
+								int sumDataLen = dataLen;
 								for (int sn = rcvSn - 1; sn >= rcvSn - rcvFrgCnt + 1; --sn)
 								{
 									iBuf->prepend(inputFrgMap_[sn]);
@@ -734,7 +689,7 @@ public:
 							else
 								discardRcvedData();
 						}
-					} // if (rcvFrgCnt > 1)
+					} /*if (rcvFrgCnt > 1)*/
 				}
 				else if (rcvSn < nextRcvSn_)
 					discardRcvedData();
@@ -744,7 +699,7 @@ public:
 				if (rcvSn >= nextRcvSn_)
 				{
 					nextRcvSn_ = rcvSn + 1;
-					rcvFunc_(userBuf, len, iBuf->readInt16(), pktType);
+					rcvFunc_(userBuf, len, dataLen, pktType);
 				}
 				else
 					discardRcvedData();
@@ -753,15 +708,18 @@ public:
 		else if (!hasData)
 		{
 			iBuf->retrieveAll();
-			isFinishedThisRound_ = true;
+			isThisRoundFinished_ = true;
 			len = 0;
 		}
 		return hasData;
 	}
 
-	bool IsFinishedThisRound() const { return isFinishedThisRound_; }
+	bool IsThisRoundFinished() const { return isThisRoundFinished_; }
 
 	void Switch(bool on) { on_ = on; }
+
+	void SetMTU(size_t mtu)
+	{ assert(mtu - 28 <= kMaxMSS); mss_ = mtu - 28; }
 
 private:
 
@@ -771,29 +729,109 @@ private:
 		oBuf->retrieveAll();
 	}
 
-	bool IsAnyDataLeft(const Buf* buf) const
+	void HandleFlush(Buf* oBuf, size_t frgCnt = 1)
 	{
-		if (buf->readableBytes() > kPktTypeLen)
+		if (frgCnt > 1)
 		{
-			int8_t pktType = *(buf->peek());
-			size_t curHeaderLen = pktType == static_cast<int8_t>(kUnreliable) ?
-				kUnreliableHeaderLen : kReliableHeaderLen;
-			int dataLenOffset = curHeaderLen - kDataLen;
-			int16_t be16 = 0;
-			::memcpy(&be16, buf->peek() + dataLenOffset, sizeof be16);
-			const uint16_t dataLen = be16toh(be16);
-
-			if (dataLen > kGreedyPktLenLimit)
-				return false;
-
-			return buf->readableBytes() >= (dataLen + curHeaderLen);
+			for (size_t i = frgCnt; i >= 1; --i)
+			{
+				auto curIt = outputPktDeque_.end() - i;
+				if (curIt->size() >= mss_)
+				{
+					oBuf->prepend(*curIt);
+					FlushOutputBuffer(oBuf);
+					outputPktDeque_.erase(curIt);
+				}
+				else
+				{
+					assert(i == 1);
+					if (on_)
+						PrependPrePktAndFlush(oBuf);
+					else
+					{
+						oBuf->prepend(*curIt);
+						FlushOutputBuffer(oBuf);
+					}
+				}
+			}
 		}
-		return false;
+		else if (frgCnt == 1)
+		{
+			if (on_)
+				PrependPrePktAndFlush(oBuf);
+			else
+			{
+				oBuf->prepend(outputPktDeque_.back());
+				FlushOutputBuffer(oBuf);
+			}
+		}
+	}
+
+	void PrependPrePktAndFlush(Buf* oBuf)
+	{
+		for (size_t i = 1; i <= outputPktDeque_.size(); ++i)
+		{
+			auto curIt = outputPktDeque_.end() - i;
+			bool isFirst = curIt == outputPktDeque_.begin();
+			oBuf->prepend(*curIt);
+
+			size_t prePktDataLen = 0;
+			if (!isFirst)
+				prePktDataLen = (curIt - 1)->size();
+
+			if (oBuf->readableBytes() + prePktDataLen >= mss_ || isFirst)
+			{
+				FlushOutputBuffer(oBuf);
+				outputPktDeque_.pop_front();
+				break;
+			}
+		}
+	}
+
+	bool ParsePkt(Buf* iBuf, PktTypeE &pktType, int32_t &rcvSn,
+		int8_t &rcvFrgCnt, int8_t &rcvFrg, int16_t &dataLen) const
+	{
+		bool hasData = false;
+		if (iBuf->readableBytes() >= kPktTypeLen + kSnLen + kDataLen)
+		{
+			pktType = static_cast<PktTypeE>(iBuf->readInt8());
+			rcvSn = iBuf->readInt32();
+			auto checkDataLenFunc = [&](TransmitModeE tm, bool noFrg = false) {
+				if (iBuf->readableBytes() >= kDataLen)
+				{
+					dataLen = iBuf->readInt16();
+					size_t curDataLenLimit = 0;
+					if (tm == kReliable)
+						curDataLenLimit = kReliableDataLenLimit;
+					else
+					{
+						curDataLenLimit = kUnreliableDataLenLimit;
+						if (noFrg)
+							curDataLenLimit = kUnreliableDataLenLimit + kFrgLen;
+					}
+					if (dataLen <= static_cast<int16_t>(curDataLenLimit))
+						hasData = iBuf->readableBytes() >= static_cast<size_t>(dataLen);
+				}};
+			if (pktType == static_cast<PktTypeE>(kUnreliable))
+			{
+				rcvFrgCnt = iBuf->readInt8();
+				if (rcvFrgCnt > 1 && static_cast<size_t>(rcvFrgCnt) <= kMaxFrgCnt)
+				{
+					rcvFrg = iBuf->readInt8();
+					checkDataLenFunc(kUnreliable);
+				}
+				else if (rcvFrgCnt == 1)
+					checkDataLenFunc(kUnreliable, true);
+			}
+			else
+				checkDataLenFunc(kReliable);
+		}
+		return hasData;
 	}
 
 private:
+	static const size_t kMaxMSS = 1472;
 	static const size_t kMaxFrgCnt = 128;
-	static const size_t kRedundancyPktLenLimit_ = 100;
 
 	static const size_t kPktTypeLen = sizeof(int8_t);
 	static const size_t kSnLen = sizeof(int32_t);
@@ -802,8 +840,8 @@ private:
 	static const size_t kDataLen = sizeof(int16_t);
 	static const size_t kReliableHeaderLen = kPktTypeLen + kSnLen + kDataLen;
 	static const size_t kUnreliableHeaderLen = kPktTypeLen + kSnLen + kFrgCntLen + kFrgLen + kDataLen;
-	static const size_t kGreedyPktLenLimit = 1472;
-	static const size_t kUnreliableDataLenLimit = kGreedyPktLenLimit - kUnreliableHeaderLen;
+	static const size_t kUnreliableDataLenLimit = kMaxMSS - kUnreliableHeaderLen;
+	static const size_t kReliableDataLenLimit = kMaxMSS - kReliableHeaderLen;
 
 	RecvFuncion rcvFunc_;
 	UserOutputFunction userOutputFunc_;
@@ -811,10 +849,9 @@ private:
 	std::unordered_map<int, std::string> inputFrgMap_;
 	int32_t nextSndSn_;
 	int32_t nextRcvSn_;
-	bool isFinishedThisRound_;
+	bool isThisRoundFinished_;
 	bool on_;
-	bool greedyMode_;
-	size_t curPktLenLimit_;
+	size_t mss_;
 };
 
 
@@ -824,30 +861,6 @@ typedef std::shared_ptr<KcpSession> KcpSessionPtr;
 
 class KcpSession
 {
-public:
-	//struct UserInputData
-	//{
-	//	UserInputData(char *data = nullptr, const int len = 0)
-	//	{
-	//		this->len_ = len;
-	//		if (len > 0)
-	//			this->data_ = data;
-	//		else
-	//			this->data_ = nullptr;
-	//	}
-	//	char* data_;
-	//	int len_;
-	//};
-
-	//typedef std::function<void(const void* pendingSendData, int pendingSendDataLen)> UserOutputFunction;
-	//typedef std::function<UserInputData()> UserInputFunction;
-	//typedef std::function<int()> CurrentTimestampMsFunc;
-	//typedef std::function<void(std::deque<std::string>* pendingSendDataDeque)> KcpSessionConnectionCallback;
-	//enum TransmitModeE { kUnreliable = 88, kReliable };
-	//enum RoleTypeE { kSrv, kCli };
-	//enum ConnectionStateE { kConnecting, kConnected, kResetting, kReset };
-	//enum PktTypeE { kSyn = 66, kAck, kPsh, kRst };
-
 public:
 	KcpSession(const RoleTypeE role,
 		const UserOutputFunction& userOutputFunc,
@@ -871,7 +884,7 @@ public:
 		resend_(1),
 		nc_(1),
 		streamMode_(0),
-		mtu_(300),
+		mtu_(548),
 		rx_minrto_(10)
 	{
 		if (IsClient() && !IsConnected())
@@ -888,14 +901,14 @@ public:
 			&& (static_cast<int>(pendingSndDataDeque_.size()) < maxWaitSndCount_);
 	}
 
-// returns below zero for error
+	// returns below zero for error
 	int Send(const void* data, int len, TransmitModeE transmitMode = kReliable)
 	{ return SendImpl(data, len, transmitMode); }
 
 	// update then returns next update timestamp in ms or returns below zero for error
 	int Update() { return UpdateImpl(); }
 
-	// returns IsAnyDataLeft, len below zero for error
+	// returns Is-Any-Data-Left, len below zero for error
 	bool Recv(Buf* userBuf, int& len) { return RecvImpl(userBuf, len); }
 
 	/// ------ advanced APIs --------
@@ -903,7 +916,7 @@ public:
 	bool IsServer() const { return role_ == kSrv; }
 	bool IsClient() const { return role_ == kCli; }
 
-	ikcpcb* GetKcp() const { return kcp_; }
+	ikcpcb* GetKcpInstance() const { return kcp_; }
 
 	bool IsConnected() const { return curConnState_ == kConnected; }
 
@@ -914,14 +927,15 @@ public:
 	void setConnectionCallback(KcpSessionConnectionCallback cb) { connectionCallback_ = std::move(cb); }
 
 	// should set before Send()
-	void SetKcpConfig(const int sndWnd = 128, const int rcvWnd = 128, const int maxWaitSndCount = 512,
-		const int nodelay = 1, const int interval = 10, const int resend = 1, const int nc = 1,
-		const int streamMode = 0, const int mtu = 300, const int rx_minrto = 10)
+	void SetConfig(const int mtu = 444, const int sndWnd = 128, const int rcvWnd = 128,
+		const int maxWaitSndCount = 512, const int nodelay = 1, const int interval = 10, const int resend = 1,
+		const int nc = 1, const int streamMode = 0, const int rx_minrto = 10)
 	{
 		assert(maxWaitSndCount > sndWnd);
+		fec_.SetMTU(mtu);
 		sndWnd_ = sndWnd; rcvWnd_ = rcvWnd; maxWaitSndCount_ = maxWaitSndCount;
-		nodelay_ = nodelay; interval_ = interval; resend_ = resend; nc_ = nc;
-		streamMode_ = streamMode; mtu_ = mtu; rx_minrto_ = rx_minrto;
+		nodelay_ = nodelay; interval_ = interval; resend_ = resend;
+		nc_ = nc; streamMode_ = streamMode; rx_minrto_ = rx_minrto;
 	}
 
 	~KcpSession() { if (kcp_) ikcp_release(kcp_); }
@@ -961,7 +975,6 @@ private:
 
 		if (transmitMode == kUnreliable)
 		{
-			//outputBuf_.appendInt8(kUnreliable);
 			outputBuf_.append(data, len);
 			int error = OutputAfterCheckingFec(static_cast<PktTypeE>(kUnreliable));
 			if (error)
@@ -990,7 +1003,7 @@ private:
 
 	bool RecvImpl(Buf* userBuf, int& len)
 	{
-		if (fec_.IsFinishedThisRound())
+		if (fec_.IsThisRoundFinished())
 		{
 			const UserInputData& rawRecvdata = userInputFunc_();
 			if (rawRecvdata.len_ <= 0)
@@ -1039,8 +1052,6 @@ private:
 
 	void DoRecv(Buf* userBuf, int& len, int readableLen, PktTypeE pktType)
 	{
-		//int8_t pktType = inputBuf_.readInt8();
-		//readableLen -= 1;
 		if (pktType == static_cast<PktTypeE>(kUnreliable))
 		{
 			userBuf->append(inputBuf_.peek(), readableLen);
@@ -1110,21 +1121,18 @@ private:
 	void SendRst()
 	{
 		assert(IsServer());
-		//outputBuf_.appendInt8(kRst);
 		OutputAfterCheckingFec(kRst);
 	}
 
 	void SendSyn()
 	{
 		assert(IsClient());
-		//outputBuf_.appendInt8(kSyn);
 		OutputAfterCheckingFec(kSyn);
 	}
 
 	void SendAckAndConv()
 	{
 		assert(IsServer());
-		//outputBuf_.appendInt8(kAck);
 		outputBuf_.appendInt32(conv_);
 		OutputAfterCheckingFec(kAck);
 	}
@@ -1177,7 +1185,6 @@ private:
 	{
 		(void)kcp;
 		auto thisPtr = reinterpret_cast<KcpSession *>(user);
-		//thisPtr->outputBuf_.appendInt8(kPsh);
 		thisPtr->outputBuf_.append(data, len);
 		return thisPtr->OutputAfterCheckingFec(kPsh);
 	}

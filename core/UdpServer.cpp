@@ -9,7 +9,7 @@
 #include "UdpConnector.h"
 
 #include <stdio.h>  // snprintf
-#include <kcpsess/kcpsess.h>
+#include <kcpp/kcpp.h>
 
 using namespace muduo;
 using namespace muduo::net;
@@ -95,7 +95,7 @@ void UdpServer::newConnection( Socket* connectedSocket,
 
 	// FIXME poll with zero timeout to double confirm the new connection
 	// FIXME use make_shared if necessary
-	UdpConnectionPtr conn( new UdpConnection( kcpsess::KcpSession::RoleTypeE::kSrv, ioLoop,
+	UdpConnectionPtr conn( new UdpConnection( kcpp::RoleTypeE::kSrv, ioLoop,
 		connName, connectedSocket, nextConnId_, localAddr, peerAddr, firstRcvBuf ) );
 
 	++nextConnId_;

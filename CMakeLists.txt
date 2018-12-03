@@ -58,7 +58,7 @@ if(UNIX)
     add_subdirectory(core)
     add_subdirectory(test)
     add_subdirectory(third/muduo)
-    add_subdirectory(third/kcpsess)
+    add_subdirectory(third/kcpp)
 
 else()
   	message(SEND_ERROR "You are on an unsupported platform! (Not Unix)")

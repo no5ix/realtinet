@@ -1,6 +1,6 @@
 set (PROJ_NAME realtinet)
 set (MUDUO_LIB_NAME muduo)
-set (KCPSESS_LIB_NAME kcpsess)
+set (KCPSESS_LIB_NAME kcpp)
 
 IF(UNIX)
 

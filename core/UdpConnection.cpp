@@ -21,7 +21,7 @@
 using namespace muduo;
 using namespace muduo::net;
 
-using kcpsess::KcpSession;
+using kcpp::KcpSession;
 
 
 void muduo::net::UdpDefaultConnectionCallback(const UdpConnectionPtr& conn)
@@ -43,7 +43,7 @@ void muduo::net::UdpDefaultMessageCallback(const UdpConnectionPtr& conn,
 	Timestamp recvTime)
 {}
 
-UdpConnection::UdpConnection(const kcpsess::KcpSession::RoleTypeE role,
+UdpConnection::UdpConnection(const kcpp::RoleTypeE role,
 	EventLoop* loop,
 	const string& nameArg,
 	Socket* connectedSocket,
@@ -110,8 +110,7 @@ UdpConnection::~UdpConnection()
 }
 
 void UdpConnection::send(const void* data, int len,
-	//KcpSession::DataTypeE transmitMode /*= KcpSession::DataTypeE::kUnreliable*/)
-	kcpsess::KcpSession::TransmitModeE transmitMode /*= KcpSession::DataTypeE::kReliable*/)
+	kcpp::TransmitModeE transmitMode /*= kcpp::TransmitModeE::kReliable*/)
 {
 	len = kcpSession_->Send(data, len, transmitMode);
 	if (len < 0)
@@ -198,7 +197,7 @@ void UdpConnection::DoSend(const void* data, int len)
 	}
 }
 
-KcpSession::UserInputData UdpConnection::DoRecv()
+kcpp::UserInputData UdpConnection::DoRecv()
 {
 	int n = 0;
 	if (firstRcvBuf_)
@@ -221,7 +220,7 @@ KcpSession::UserInputData UdpConnection::DoRecv()
 			handleError();
 		}
 	}
-	return KcpSession::UserInputData(packetBuf_, n);
+	return kcpp::UserInputData(packetBuf_, n);
 }
 
 void UdpConnection::sendInLoop(const void* data, size_t len)

@@ -23,7 +23,7 @@
 #include <memory>
 
 #include "any.h"
-#include <kcpsess/kcpsess.h>
+#include <kcpp/kcpp.h>
 
 namespace muduo
 {
@@ -41,7 +41,7 @@ namespace muduo
 			/// Constructs a UdpConnection with a connected sockfd
 			///
 			/// User should not create this object.
-			UdpConnection(const kcpsess::KcpSession::RoleTypeE role,
+			UdpConnection(const kcpp::RoleTypeE role,
 				EventLoop* loop,
 				const string& name,
 				Socket* connectedSocket,
@@ -64,8 +64,7 @@ namespace muduo
 
 			// void send(string&& message); // C++11
 			void send( const void* message, int len,
-				//kcpsess::KcpSession::TransmitModeE transmitMode = kcpsess::KcpSession::TransmitModeE::kUnreliable);
-				kcpsess::KcpSession::TransmitModeE transmitMode = kcpsess::KcpSession::TransmitModeE::kReliable);
+				kcpp::TransmitModeE transmitMode = kcpp::TransmitModeE::kReliable);
 
 			void send(const StringPiece& message)
 			{ send(message.data(), message.size()); }
@@ -120,7 +119,7 @@ namespace muduo
 
 			void KcpSessionUpdate();
 			void DoSend(const void* message, int len);
-			kcpsess::KcpSession::UserInputData DoRecv();
+			kcpp::UserInputData DoRecv();
 
 			void handleRead( Timestamp receiveTime);
 			void handleClose();
@@ -155,10 +154,10 @@ namespace muduo
 			realtinet::any context_;
 
 			Buffer inputBuffer_;
-			kcpsess::Buf kcpsessRcvBuf_;
+			kcpp::Buf kcpsessRcvBuf_;
 
 			// kcp
-			std::shared_ptr<kcpsess::KcpSession> kcpSession_;
+			std::shared_ptr<kcpp::KcpSession> kcpSession_;
 			TimerId curKcpsessUpTimerId_;
 			Buffer* firstRcvBuf_;
 			//bool isCliKcpsessConned_;

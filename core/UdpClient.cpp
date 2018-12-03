@@ -8,7 +8,7 @@
 #include <net/SocketsOps.h>
 
 #include <stdio.h>  // snprintf
-#include <kcpsess/kcpsess.h>
+#include <kcpp/kcpp.h>
 
 using namespace muduo;
 using namespace muduo::net;
@@ -135,7 +135,7 @@ void UdpClient::newConnection( Socket* connectedSocket )
 	InetAddress localAddr( sockets::getLocalAddr( connectedSocket->fd() ) );
 	// FIXME poll with zero timeout to double confirm the new connection
 	// FIXME use make_shared if necessary
-	UdpConnectionPtr conn( new UdpConnection( kcpsess::KcpSession::RoleTypeE::kCli, loop_,
+	UdpConnectionPtr conn( new UdpConnection( kcpp::RoleTypeE::kCli, loop_,
 		connName, connectedSocket, nextConnId_, localAddr, peerAddr ) );
 
 	++nextConnId_;

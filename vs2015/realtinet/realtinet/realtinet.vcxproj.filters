@@ -19,7 +19,7 @@
     <Filter Include="third\muduo\net\poller">
       <UniqueIdentifier>{0ffc63b3-4860-43d3-9f55-0a351d6f8774}</UniqueIdentifier>
     </Filter>
-    <Filter Include="third\kcpsess">
+    <Filter Include="third\kcpp">
       <UniqueIdentifier>{909ba905-bb57-4bc3-8f32-3e723264d7e5}</UniqueIdentifier>
     </Filter>
     <Filter Include="third\muduo-win">
@@ -48,8 +48,8 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="..\..\..\third\kcpsess\CMakeLists.txt">
-      <Filter>third\kcpsess</Filter>
+    <Text Include="..\..\..\third\kcpp\CMakeLists.txt">
+      <Filter>third\kcpp</Filter>
     </Text>
     <Text Include="..\..\..\third\muduo\CMakeLists.txt">
       <Filter>third\muduo</Filter>
@@ -59,14 +59,8 @@
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\third\kcpsess\ikcp.c">
-      <Filter>third\kcpsess</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\third\kcpsess\TestKcpSessionClient.cpp">
-      <Filter>third\kcpsess</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\third\kcpsess\TestKcpSessionServer.cpp">
-      <Filter>third\kcpsess</Filter>
+    <ClCompile Include="..\..\..\third\kcpp\ikcp.c">
+      <Filter>third\kcpp</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\third\muduo\base\Condition.cc">
       <Filter>third\muduo\base</Filter>
@@ -337,11 +331,11 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\third\kcpsess\ikcp.h">
-      <Filter>third\kcpsess</Filter>
+    <ClInclude Include="..\..\..\third\kcpp\ikcp.h">
+      <Filter>third\kcpp</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\third\kcpsess\kcpsess.h">
-      <Filter>third\kcpsess</Filter>
+    <ClInclude Include="..\..\..\third\kcpp\kcpp.h">
+      <Filter>third\kcpp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\third\muduo\base\Atomic.h">
       <Filter>third\muduo\base</Filter>
@@ -633,11 +627,11 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\third\kcpsess\.gitignore">
-      <Filter>third\kcpsess</Filter>
+    <None Include="..\..\..\third\kcpp\.gitignore">
+      <Filter>third\kcpp</Filter>
     </None>
-    <None Include="..\..\..\third\kcpsess\README.md">
-      <Filter>third\kcpsess</Filter>
+    <None Include="..\..\..\third\kcpp\README.md">
+      <Filter>third\kcpp</Filter>
     </None>
   </ItemGroup>
 </Project>
