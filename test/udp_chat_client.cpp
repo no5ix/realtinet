@@ -43,7 +43,7 @@ public:
 		//LOG_INFO << "into UdpChatClient::write";
 		MutexLockGuard lock(mutex_);
 		//std::unique_lock<std::mutex> lck(mutex_);
-		if (connection_)
+		if (connection_ && connection_->canSend())
 		{
 			//LOG_INFO << "into UdpChatClient::write codec_.send(get_pointer(connection_), message);";
 			codec_.send(get_pointer(connection_), message);

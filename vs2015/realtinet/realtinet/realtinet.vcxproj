@@ -121,6 +121,7 @@
   <ItemGroup>
     <Text Include="..\..\..\core\CMakeLists.txt" />
     <Text Include="..\..\..\third\kcpp\CMakeLists.txt" />
+    <Text Include="..\..\..\third\kcpp\test\CMakeLists.txt" />
     <Text Include="..\..\..\third\muduo\CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
@@ -144,6 +145,10 @@
     <ClCompile Include="..\..\..\test\udp_chat_client.cpp" />
     <ClCompile Include="..\..\..\test\udp_chat_server.cpp" />
     <ClCompile Include="..\..\..\third\kcpp\ikcp.c" />
+    <ClCompile Include="..\..\..\third\kcpp\test\TestKcpCli.cpp" />
+    <ClCompile Include="..\..\..\third\kcpp\test\TestKcppClient.cpp" />
+    <ClCompile Include="..\..\..\third\kcpp\test\TestKcppServer.cpp" />
+    <ClCompile Include="..\..\..\third\kcpp\test\TestKcpSrv.cpp" />
     <ClCompile Include="..\..\..\third\muduo-win\src\base\async_logging.cc" />
     <ClCompile Include="..\..\..\third\muduo-win\src\base\config_file_reader.cc" />
     <ClCompile Include="..\..\..\third\muduo-win\src\base\count_down_latch.cc" />

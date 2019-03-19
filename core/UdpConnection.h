@@ -62,6 +62,13 @@ namespace muduo
 			bool connected() const { return state_ == kConnected; }
 			bool disconnected() const { return state_ == kDisconnected; }
 
+			bool canSend() const
+			{ 
+				if (kcpSession_)
+					return kcpSession_->CheckCanSend();
+				return true;
+			}
+
 			// void send(string&& message); // C++11
 			void send( const void* message, int len,
 				kcpp::TransmitModeE transmitMode = kcpp::TransmitModeE::kReliable);

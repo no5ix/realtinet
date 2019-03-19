@@ -46,6 +46,9 @@
     <Filter Include="test">
       <UniqueIdentifier>{4b103e73-a286-4e8a-9d41-6ef5f5f5fe2f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="third\kcpp\test">
+      <UniqueIdentifier>{2c5821b6-fd02-4381-b071-3b4f60af76c1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\..\third\kcpp\CMakeLists.txt">
@@ -56,6 +59,9 @@
     </Text>
     <Text Include="..\..\..\core\CMakeLists.txt">
       <Filter>core</Filter>
+    </Text>
+    <Text Include="..\..\..\third\kcpp\test\CMakeLists.txt">
+      <Filter>third\kcpp\test</Filter>
     </Text>
   </ItemGroup>
   <ItemGroup>
@@ -328,6 +334,18 @@
     </ClCompile>
     <ClCompile Include="..\..\..\test\udp_chat_server.cpp">
       <Filter>test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\third\kcpp\test\TestKcpCli.cpp">
+      <Filter>third\kcpp\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\third\kcpp\test\TestKcppClient.cpp">
+      <Filter>third\kcpp\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\third\kcpp\test\TestKcppServer.cpp">
+      <Filter>third\kcpp\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\third\kcpp\test\TestKcpSrv.cpp">
+      <Filter>third\kcpp\test</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

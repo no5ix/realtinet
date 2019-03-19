@@ -160,8 +160,8 @@ void UdpConnection::KcpSessionUpdate()
 		}
 		curKcpsessUpTimerId_ = loop_->runAt(Timestamp(nextUpdateTimeMs * 1000), [&]() {
 			KcpSessionUpdate();
-			if (!kcpSession_->CheckCanSend()/* || (kcpSession_->CheckTimeout() && kcpSession_->IsServer())*/)
-				handleClose();
+			//if (!kcpSession_->CheckCanSend()/* || (kcpSession_->CheckTimeout() && kcpSession_->IsServer())*/)
+			//	handleClose();
 			//if (kcpSession_->IsClient() && !isCliKcpsessConned_ && kcpSession_->IsKcpsessConnected())
 			//{
 			//	isCliKcpsessConned_ = true;
@@ -369,7 +369,7 @@ void UdpConnection::handleClose()
 {
 	loop_->assertInLoopThread();
 	LOG_TRACE << "fd = " << channel_->fd() << " state = " << stateToString();
-	assert(state_ == kConnected || state_ == kDisconnecting);
+	//assert(state_ == kConnected || state_ == kDisconnecting);
 	// we don't close fd, leave it to dtor, so we can find leaks easily.
 	setState(kDisconnected);
 	channel_->disableAll();
