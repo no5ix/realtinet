@@ -1,0 +1,3 @@
+[submodule "third/kcpp"]
+	path = third/kcpp
+	url = git@github.com:no5ix/kcpp.git
