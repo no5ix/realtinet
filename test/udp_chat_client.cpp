@@ -130,7 +130,12 @@ int main(int argc, char* argv[])
 			{
 				sprintf(c, "%05d", i++);
 				client.write(line + std::string(" ") + std::string(c));
+
+			#ifndef _WIN32
 				CurrentThread::sleepUsec(1000 * 1);
+			#else
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+			#endif
 			}
 		}
 		else

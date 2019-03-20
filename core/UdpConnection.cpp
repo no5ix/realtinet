@@ -100,50 +100,57 @@ UdpConnection::~UdpConnection()
 }
 
 // FIXME efficiency!!!
-void UdpConnection::send(Buffer* buf)
+void UdpConnection::send(Buffer* buf,
+	kcpp::TransmitModeE transmitMode /*= kcpp::TransmitModeE::kReliable*/)
 {
 	if (state_ == kConnected)
 	{
 		if (loop_->isInLoopThread())
 		{
-			sendInLoop(buf->peek(), buf->readableBytes());
+			sendInLoop(buf->peek(), buf->readableBytes(), transmitMode);
 			buf->retrieveAll();
 		}
 		else
 		{
-			void (UdpConnection::*fp)(const StringPiece& message) = &UdpConnection::sendInLoop;
+			void (UdpConnection::*fp)(const StringPiece& message, kcpp::TransmitModeE transmitMode)
+				= &UdpConnection::sendInLoop;
 			loop_->runInLoop(
 				std::bind(fp,
 					this,     // FIXME
-					buf->retrieveAllAsString()));
+					buf->retrieveAllAsString(),
+					transmitMode));
 			//std::forward<string>(message)));
 		}
 	}
 }
 
-void UdpConnection::send(const StringPiece& message)
+void UdpConnection::send(const StringPiece& message,
+	kcpp::TransmitModeE transmitMode /*= kcpp::TransmitModeE::kReliable*/)
 {
 	if (state_ == kConnected)
 	{
 		if (loop_->isInLoopThread())
 		{
-			sendInLoop(message);
+			sendInLoop(message, transmitMode);
 		}
 		else
 		{
-			void (UdpConnection::*fp)(const StringPiece& message) = &UdpConnection::sendInLoop;
+			void (UdpConnection::*fp)(const StringPiece& message, kcpp::TransmitModeE transmitMode)
+				= &UdpConnection::sendInLoop;
 			loop_->runInLoop(
 				std::bind(fp,
 					this,     // FIXME
-					message.as_string()));
+					message.as_string(),
+					transmitMode));
 			//std::forward<string>(message)));
 		}
 	}
 }
 
-void UdpConnection::sendInLoop(const StringPiece& message)
+void UdpConnection::sendInLoop(const StringPiece& message,
+	kcpp::TransmitModeE transmitMode /*= kcpp::TransmitModeE::kReliable*/)
 {
-	sendInLoop(message.data(), message.size());
+	sendInLoop(message.data(), message.size(), transmitMode);
 }
 
 void UdpConnection::handleRead(Timestamp receiveTime)
@@ -194,23 +201,6 @@ void UdpConnection::KcpSessionUpdate()
 
 void UdpConnection::DoSend(const void* data, int len)
 {
-	////if (state_ == kConnected)
-	//{
-	//	if (loop_->isInLoopThread())
-	//	{
-	//		sendInLoop(data, static_cast<size_t>(len));
-	//	}
-	//	else
-	//	{
-	//		void (UdpConnection::*fp)(const void* data, size_t len)
-	//			= &UdpConnection::sendInLoop;
-	//		loop_->runInLoop(
-	//			std::bind(fp,
-	//				this,     // FIXME
-	//				data,
-	//				static_cast<size_t>(len)));
-	//	}
-	//}
 	ssize_t nwrote = 0;
 	nwrote = sockets::write(channel_->fd(), data, len);
 	if (nwrote >= 0)
@@ -249,7 +239,8 @@ void UdpConnection::kcpSend(const void* data, int len,
 		LOG_ERROR << "kcpSession send failed";
 }
 
-void UdpConnection::sendInLoop(const void* data, size_t len)
+void UdpConnection::sendInLoop(const void* data, size_t len,
+	kcpp::TransmitModeE transmitMode /*= kcpp::TransmitModeE::kReliable*/)
 {
 	//LOG_INFO << "call sendInLoop";
 
@@ -259,7 +250,7 @@ void UdpConnection::sendInLoop(const void* data, size_t len)
 		LOG_WARN << "disconnected, give up writing";
 		return;
 	}
-	kcpSend(data, len);
+	kcpSend(data, len, transmitMode);
 }
 
 void UdpConnection::shutdown()

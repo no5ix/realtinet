@@ -70,14 +70,17 @@ namespace muduo
 
 			// void send(string&& message); // C++11
 
-			void send(const void* data, int len)
-			{ send(StringPiece(static_cast<const char*>(data), len)); }
+			void send(const void* data, int len,
+				kcpp::TransmitModeE transmitMode = kcpp::TransmitModeE::kReliable)
+			{ send(StringPiece(static_cast<const char*>(data), len), transmitMode); }
 
-			void send(const StringPiece& message);
+			void send(const StringPiece& message,
+				kcpp::TransmitModeE transmitMode = kcpp::TransmitModeE::kReliable);
 			//{ send(message.data(), message.size()); }
 
 			// FIXME efficiency!!!
-			void send(Buffer* buf);
+			void send(Buffer* buf,
+				kcpp::TransmitModeE transmitMode = kcpp::TransmitModeE::kReliable);
 			//{ send(buf->peek(), static_cast<int>(buf->readableBytes())); }
 
 			void shutdown(); // NOT thread safe, no simultaneous calling
@@ -135,8 +138,8 @@ namespace muduo
 			void handleClose();
 			void handleError();
 			// void sendInLoop(string&& message);
-			void sendInLoop(const StringPiece& message);
-			void sendInLoop( const void* message, size_t len );
+			void sendInLoop(const StringPiece& message, kcpp::TransmitModeE transmitMode);
+			void sendInLoop(const void* message, size_t len, kcpp::TransmitModeE transmitMode);
 			// void shutdownAndForceCloseInLoop(double seconds);
 			void forceCloseInLoop();
 			void setState( StateE s ) { state_ = s; }
