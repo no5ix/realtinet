@@ -85,7 +85,7 @@ namespace muduo
 		private:
 			/// Not thread safe, but in loop
 			void newConnection( Socket* connectedSocket,
-				const InetAddress& peerAddr, Buffer* firstRcvBuf );
+				const InetAddress& peerAddr);
 			/// Thread safe.
 			void removeConnection( const UdpConnectionPtr& conn );
 			/// Not thread safe, but in loop

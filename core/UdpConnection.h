@@ -47,8 +47,7 @@ namespace muduo
 				Socket* connectedSocket,
 				int ConnectionId,
 				const InetAddress& localAddr,
-				const InetAddress& peerAddr,
-				Buffer* firstRcvBuf = nullptr);
+				const InetAddress& peerAddr);
 
 			~UdpConnection();
 
@@ -171,7 +170,6 @@ namespace muduo
 			// kcp
 			std::shared_ptr<kcpp::KcpSession> kcpSession_;
 			TimerId curKcpsessUpTimerId_;
-			Buffer* firstRcvBuf_;
 			//bool isCliKcpsessConned_;
 		};
 

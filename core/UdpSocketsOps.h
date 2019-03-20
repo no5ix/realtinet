@@ -27,7 +27,7 @@ int createUdpNonblockingOrDie( sa_family_t family );
 int createUdpNonblockingOrDie(int family);
 #endif
 
-int recvfrom(int sockfd, struct sockaddr_in6* addr, Buffer *recvfromBuf);
+int recvfrom(int sockfd, struct sockaddr_in6* addr, char *packetMem, int packetSize);
 }
 }
 }

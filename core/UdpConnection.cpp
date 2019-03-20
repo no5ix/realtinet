@@ -41,8 +41,7 @@ UdpConnection::UdpConnection(const kcpp::RoleTypeE role,
 	Socket* connectedSocket,
 	int ConnectionId,
 	const InetAddress& localAddr,
-	const InetAddress& peerAddr,
-	Buffer* firstRcvBuf /*= nullptr*/)
+	const InetAddress& peerAddr)
 	:
 	loop_(CHECK_NOTNULL(loop)),
 	name_(nameArg),
@@ -53,7 +52,6 @@ UdpConnection::UdpConnection(const kcpp::RoleTypeE role,
 	channel_(new Channel(loop, socket_->fd())),
 	localAddr_(localAddr),
 	peerAddr_(peerAddr),
-	firstRcvBuf_(firstRcvBuf),
 	//isCliKcpsessConned_(false),
 	kcpSession_(new KcpSession(
 		role,
@@ -148,19 +146,6 @@ void UdpConnection::sendInLoop(const StringPiece& message)
 	sendInLoop(message.data(), message.size());
 }
 
-//void UdpConnection::handleRead(Timestamp receiveTime)
-//{
-//	loop_->assertInLoopThread();
-//	int n = 0;
-//	while (kcpSession_->Recv(packetBuf_, n))
-//	{
-//		if (n < 0)
-//			LOG_ERROR << "kcpSession Recv() Error, Recv() = " << n;
-//		else if (n > 0)
-//			messageCallback_(shared_from_this(), packetBuf_, n, receiveTime);
-//	}
-//}
-
 void UdpConnection::handleRead(Timestamp receiveTime)
 {
 	loop_->assertInLoopThread();
@@ -243,25 +228,15 @@ void UdpConnection::DoSend(const void* data, int len)
 kcpp::UserInputData UdpConnection::DoRecv()
 {
 	int n = 0;
-	if (firstRcvBuf_)
+	n = sockets::read(channel_->fd(), static_cast<void*>(packetBuf_), kPacketBufSize);
+	if (n == 0)
 	{
-		n = firstRcvBuf_->readableBytes();
-		::memcpy(packetBuf_, firstRcvBuf_->peek(), n);
-		firstRcvBuf_->retrieveAll();
-		firstRcvBuf_ = nullptr;
+		handleClose();
 	}
-	else
+	else if (n < 0)
 	{
-		n = sockets::read(channel_->fd(), static_cast<void*>(packetBuf_), kPacketBufSize);
-		if (n == 0)
-		{
-			handleClose();
-		}
-		else if (n < 0)
-		{
-			//LOG_SYSERR << "UdpConnection::handleRead";
-			handleError();
-		}
+		//LOG_SYSERR << "UdpConnection::handleRead";
+		handleError();
 	}
 	return kcpp::UserInputData(packetBuf_, n);
 }
@@ -385,11 +360,11 @@ void UdpConnection::connectEstablished()
 
 	KcpSessionUpdate();
 
-	if (kcpSession_->IsServer())
-	{
-		//connectionCallback_(shared_from_this());
-		handleRead(Timestamp::now()); // for the first recv data, see @firstRcvBuf_
-	}
+	//if (kcpSession_->IsServer())
+	//{
+	//	//connectionCallback_(shared_from_this());
+	//	handleRead(Timestamp::now()); // for the first recv data, see @firstRcvBuf_
+	//}
 }
 
 void UdpConnection::connectDestroyed()

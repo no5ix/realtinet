@@ -65,7 +65,7 @@ void UdpAcceptor::handleRead()
 	//struct sockaddr_in addr;
 	//bzero( &addr, sizeof addr );
 	memset(&addr, 0, sizeof(addr));
-	int readByteCount = sockets::recvfrom(acceptSocket_.fd(), &addr, &recvfromBuf_);
+	int readByteCount = sockets::recvfrom(acceptSocket_.fd(), &addr, recvfromBuf_, krecvfromBufSize);
 
 	if (readByteCount >= 0)
 	{
@@ -95,7 +95,7 @@ void UdpAcceptor::newConnection(Socket* connectedSocket,
 	loop_->assertInLoopThread();
 	if (newConnectionCallback_)
 	{
-		newConnectionCallback_(connectedSocket, peerAddr, &recvfromBuf_);
+		newConnectionCallback_(connectedSocket, peerAddr);
 	}
 	else
 	{

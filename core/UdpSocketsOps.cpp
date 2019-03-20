@@ -120,12 +120,12 @@ int sockets::createUdpNonblockingOrDie(int family)
 //////////
 // for udp socket
 /////////
-int sockets::recvfrom(int sockfd, struct sockaddr_in6* addr, Buffer *recvfromBuf)
+int sockets::recvfrom(int sockfd, struct sockaddr_in6* addr, char *packetMem, int packetSize)
 {
-	const uint16_t MAX_PACKET_BYTE_LENGTH = 512;
+	//const uint16_t MAX_PACKET_BYTE_LENGTH = 1500;
 
-	char packetMem[MAX_PACKET_BYTE_LENGTH];
-	int packetSize = sizeof(packetMem);
+	//char packetMem[MAX_PACKET_BYTE_LENGTH];
+	//int packetSize = sizeof(packetMem);
 	socklen_t addrlen = static_cast<socklen_t>(sizeof *addr);
 
 	int readByteCount = static_cast<int>(::recvfrom(sockfd,
@@ -151,6 +151,6 @@ int sockets::recvfrom(int sockfd, struct sockaddr_in6* addr, Buffer *recvfromBuf
 				break;
 		}
 	}
-	recvfromBuf->append(packetMem, readByteCount);
+	//recvfromBuf->append(packetMem, readByteCount);
 	return readByteCount;
 }

@@ -25,7 +25,7 @@ namespace muduo
 		{
 		public:
 			typedef std::function<void( 
-				Socket* connectedSocket, const InetAddress&, Buffer* )> NewConnectionCallback;
+				Socket* connectedSocket, const InetAddress&)> NewConnectionCallback;
 
 			UdpAcceptor( EventLoop* loop, const InetAddress& listenAddr, bool reuseport );
 			~UdpAcceptor();
@@ -57,7 +57,8 @@ namespace muduo
 			typedef std::map<InetAddress, UdpConnectorPtr> InetAddressToUdpConnectorMap;
 			InetAddressToUdpConnectorMap peerAddrToUdpConnectors_;
 
-			Buffer recvfromBuf_;
+			static const size_t krecvfromBufSize = 1500;
+			char recvfromBuf_[krecvfromBufSize];
 		};
 
 	}
