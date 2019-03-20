@@ -70,15 +70,16 @@ namespace muduo
 			}
 
 			// void send(string&& message); // C++11
-			void send( const void* message, int len,
-				kcpp::TransmitModeE transmitMode = kcpp::TransmitModeE::kReliable);
 
-			void send(const StringPiece& message)
-			{ send(message.data(), message.size()); }
+			void send(const void* data, int len)
+			{ send(StringPiece(static_cast<const char*>(data), len)); }
+
+			void send(const StringPiece& message);
+			//{ send(message.data(), message.size()); }
 
 			// FIXME efficiency!!!
-			void send(Buffer* buf)
-			{ send(buf->peek(), static_cast<int>(buf->readableBytes())); }
+			void send(Buffer* buf);
+			//{ send(buf->peek(), static_cast<int>(buf->readableBytes())); }
 
 			void shutdown(); // NOT thread safe, no simultaneous calling
 							 // void shutdownAndForceCloseAfter(double seconds); // NOT thread safe, no simultaneous calling
@@ -122,6 +123,9 @@ namespace muduo
 
 		private:
 
+			void kcpSend(const void* message, int len,
+				kcpp::TransmitModeE transmitMode = kcpp::TransmitModeE::kReliable);
+
 			void onKcpsessConnection(std::deque<std::string>* pendingSendDataDeque);
 
 			void KcpSessionUpdate();
@@ -132,6 +136,7 @@ namespace muduo
 			void handleClose();
 			void handleError();
 			// void sendInLoop(string&& message);
+			void sendInLoop(const StringPiece& message);
 			void sendInLoop( const void* message, size_t len );
 			// void shutdownAndForceCloseInLoop(double seconds);
 			void forceCloseInLoop();

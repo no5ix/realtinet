@@ -92,6 +92,7 @@ int main(int argc, char* argv[])
 #endif
 {
 	//LOG_INFO << "pid = " << getpid();
+
 	if (argc > 2)
 	{
 		EventLoopThread loopThread;
@@ -118,10 +119,27 @@ int main(int argc, char* argv[])
 
 		UdpChatClient client(loopThread.startLoop(), serverAddr);
 		client.connect();
-		std::string line;
-		while (std::getline(std::cin, line))
+
+		int crazy_chat_mode = 1;
+		if (crazy_chat_mode)
 		{
-			client.write(line);
+			std::string line = "i say ";
+			int i = 0;
+			char c[8];
+			while (1)
+			{
+				sprintf(c, "%05d", i++);
+				client.write(line + std::string(" ") + std::string(c));
+				CurrentThread::sleepUsec(1000 * 1);
+			}
+		}
+		else
+		{
+			std::string line;
+			while (std::getline(std::cin, line))
+			{
+				client.write(line);
+			}
 		}
 		client.disconnect();
 		//CurrentThread::sleepUsec(1000 * 1000);  // wait for disconnect, see ace/logging/client.cc

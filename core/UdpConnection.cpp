@@ -1,11 +1,3 @@
-// Copyright 2010, Shuo Chen.  All rights reserved.
-// http://code.google.com/p/muduo/
-//
-// Use of this source code is governed by a BSD-style license
-// that can be found in the License file.
-
-// Author: Shuo Chen (chenshuo at chenshuo dot com)
-
 #include "UdpConnection.h"
 
 #include <base/Logging.h>
@@ -102,19 +94,58 @@ UdpConnection::~UdpConnection()
 		<< " fd=" << channel_->fd()
 		<< " state=" << stateToString();
 
-	//LOG_INFO << localAddress().toIpPort() << " -> "
-	//	<< peerAddress().toIpPort() << " is "
-	//	<< (connected() ? "UP" : "DOWN");
+	LOG_INFO << localAddress().toIpPort() << " -> "
+		<< peerAddress().toIpPort() << " is "
+		<< (connected() ? "UP" : "DOWN");
 
 	loop_->cancel(curKcpsessUpTimerId_);
 }
 
-void UdpConnection::send(const void* data, int len,
-	kcpp::TransmitModeE transmitMode /*= kcpp::TransmitModeE::kReliable*/)
+// FIXME efficiency!!!
+void UdpConnection::send(Buffer* buf)
 {
-	len = kcpSession_->Send(data, len, transmitMode);
-	if (len < 0)
-		LOG_ERROR << "kcpSession send failed";
+	if (state_ == kConnected)
+	{
+		if (loop_->isInLoopThread())
+		{
+			sendInLoop(buf->peek(), buf->readableBytes());
+			buf->retrieveAll();
+		}
+		else
+		{
+			void (UdpConnection::*fp)(const StringPiece& message) = &UdpConnection::sendInLoop;
+			loop_->runInLoop(
+				std::bind(fp,
+					this,     // FIXME
+					buf->retrieveAllAsString()));
+			//std::forward<string>(message)));
+		}
+	}
+}
+
+void UdpConnection::send(const StringPiece& message)
+{
+	if (state_ == kConnected)
+	{
+		if (loop_->isInLoopThread())
+		{
+			sendInLoop(message);
+		}
+		else
+		{
+			void (UdpConnection::*fp)(const StringPiece& message) = &UdpConnection::sendInLoop;
+			loop_->runInLoop(
+				std::bind(fp,
+					this,     // FIXME
+					message.as_string()));
+			//std::forward<string>(message)));
+		}
+	}
+}
+
+void UdpConnection::sendInLoop(const StringPiece& message)
+{
+	sendInLoop(message.data(), message.size());
 }
 
 //void UdpConnection::handleRead(Timestamp receiveTime)
@@ -178,22 +209,34 @@ void UdpConnection::KcpSessionUpdate()
 
 void UdpConnection::DoSend(const void* data, int len)
 {
-	//if (state_ == kConnected)
+	////if (state_ == kConnected)
+	//{
+	//	if (loop_->isInLoopThread())
+	//	{
+	//		sendInLoop(data, static_cast<size_t>(len));
+	//	}
+	//	else
+	//	{
+	//		void (UdpConnection::*fp)(const void* data, size_t len)
+	//			= &UdpConnection::sendInLoop;
+	//		loop_->runInLoop(
+	//			std::bind(fp,
+	//				this,     // FIXME
+	//				data,
+	//				static_cast<size_t>(len)));
+	//	}
+	//}
+	ssize_t nwrote = 0;
+	nwrote = sockets::write(channel_->fd(), data, len);
+	if (nwrote >= 0)
 	{
-		if (loop_->isInLoopThread())
-		{
-			sendInLoop(data, static_cast<size_t>(len));
-		}
-		else
-		{
-			void (UdpConnection::*fp)(const void* data, size_t len)
-				= &UdpConnection::sendInLoop;
-			loop_->runInLoop(
-				std::bind(fp,
-					this,     // FIXME
-					data,
-					static_cast<size_t>(len)));
-		}
+		if (len - nwrote == 0 && writeCompleteCallback_)
+			loop_->queueInLoop(std::bind(writeCompleteCallback_, shared_from_this()));
+	}
+	else // nwrote < 0
+	{
+		//LOG_SYSERR << "UdpConnection::DoSend";
+		handleError();
 	}
 }
 
@@ -216,11 +259,19 @@ kcpp::UserInputData UdpConnection::DoRecv()
 		}
 		else if (n < 0)
 		{
-			LOG_SYSERR << "UdpConnection::handleRead";
+			//LOG_SYSERR << "UdpConnection::handleRead";
 			handleError();
 		}
 	}
 	return kcpp::UserInputData(packetBuf_, n);
+}
+
+void UdpConnection::kcpSend(const void* data, int len,
+	kcpp::TransmitModeE transmitMode /*= kcpp::TransmitModeE::kReliable*/)
+{
+	len = kcpSession_->Send(data, len, transmitMode);
+	if (len < 0)
+		LOG_ERROR << "kcpSession send failed";
 }
 
 void UdpConnection::sendInLoop(const void* data, size_t len)
@@ -228,23 +279,12 @@ void UdpConnection::sendInLoop(const void* data, size_t len)
 	//LOG_INFO << "call sendInLoop";
 
 	loop_->assertInLoopThread();
-	ssize_t nwrote = 0;
 	if (state_ == kDisconnected)
 	{
 		LOG_WARN << "disconnected, give up writing";
 		return;
 	}
-	nwrote = sockets::write(channel_->fd(), data, len);
-	if (nwrote >= 0)
-	{
-		if (len - nwrote == 0 && writeCompleteCallback_)
-			loop_->queueInLoop(std::bind(writeCompleteCallback_, shared_from_this()));
-	}
-	else // nwrote < 0
-	{
-		if (errno != EWOULDBLOCK)
-			LOG_SYSERR << "UdpConnection::sendInLoop";
-	}
+	kcpSend(data, len);
 }
 
 void UdpConnection::shutdown()
@@ -383,15 +423,17 @@ void UdpConnection::handleClose()
 void UdpConnection::handleError()
 {
 	int err = sockets::getSocketError(channel_->fd());
-	if (err == ECONNREFUSED)
+	if (err != 0)
 	{
-		//LOG_INFO << peerAddr_.toIpPort() << " is disconnected";
-		;
-	}
-	else
-	{
-		LOG_ERROR << "UdpConnection::handleError [" << name_
-			<< "] - SO_ERROR = " << err << " " << strerror_tl(err);
+		if (err == ECONNREFUSED)
+		{
+			LOG_INFO << peerAddr_.toIpPort() << " is disconnected";
+		}
+		else
+		{
+			LOG_ERROR << "UdpConnection::handleError [" << name_
+				<< "] - SO_ERROR = " << err << " " << strerror_tl(err);
+		}
 		handleClose();
 	}
 }

@@ -119,7 +119,7 @@ void UdpServer::removeConnectionInLoop( const UdpConnectionPtr& conn )
 {
 	loop_->assertInLoopThread();
 	//LOG_INFO << "UdpServer::removeConnectionInLoop [" << name_
-		//<< "] - connection " << conn->name();
+	//	<< "] - connection " << conn->name();
 
 	size_t n = connections_.erase( conn->name() );
 	( void )n;

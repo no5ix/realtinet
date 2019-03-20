@@ -139,7 +139,7 @@ int sockets::recvfrom(int sockfd, struct sockaddr_in6* addr, Buffer *recvfromBuf
 	if (readByteCount < 0)
 	{
 		int savedErrno = errno;
-		LOG_SYSERR << "Socket::accept";
+		LOG_SYSERR << "Socket::recvfrom";
 		switch (savedErrno)
 		{
 			case EAGAIN:
