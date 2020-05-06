@@ -1,3 +1,7 @@
 [submodule "third/kcpp"]
 	path = third/kcpp
 	url = git@github.com:no5ix/kcpp.git
+[submodule "third/asio"]
+	path = third/asio
+	url = https://github.com/no5ix/asio.git
+	branch = asio-1-16-1

@@ -14,6 +14,6 @@ IF(UNIX)
     add_executable(udp_chat_server udp_chat_server.cpp)
     target_link_libraries(udp_chat_server ${LIB_NAME})
 
-else()
-  	message(SEND_ERROR "You are on an unsupported platform! (Not Win32 or Unix)")
+# else()
+#   	message(SEND_ERROR "You are on an unsupported platform! (Not Win32 or Unix)")
 ENDIF()
