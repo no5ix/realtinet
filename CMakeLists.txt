@@ -55,7 +55,7 @@ elseif(WIN32)
     macro(create_win_proj win_proj_name)
         if(MSVC) # Check if we are using the Visual Studio compiler
 
-            file(GLOB_RECURSE project_headers *.h)
+            file(GLOB_RECURSE project_headers *.h*)
             file(GLOB_RECURSE project_cpps *.c*)
             set(all_files ${project_headers} ${project_cpps})
 
@@ -107,7 +107,7 @@ ENDIF()
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/core)
 include_directories(${PROJECT_SOURCE_DIR}/third)
-# include_directories(${PROJECT_SOURCE_DIR}/third/muduo)
+include_directories(${PROJECT_SOURCE_DIR}/third/asio/asio/include)
 
 add_subdirectory(core)
 add_subdirectory(test)
