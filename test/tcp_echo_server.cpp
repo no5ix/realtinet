@@ -21,7 +21,7 @@
 #include <functional>
 #include <iostream>
 #include <memory>
-#include <thread>
+// #include <thread>
 #include <vector>
 
 #include <asio.hpp>
@@ -53,7 +53,7 @@ class noncopyable {
 class io_context_pool : private common::noncopyable {
  public:
   /// Construct the io_context pool.
-  explicit io_context_pool() : next_io_context_(0) {
+  io_context_pool() : next_io_context_(0) {
     //        const auto pool_size = std::thread::hardware_concurrency();
     const auto pool_size = 3;
 
@@ -218,7 +218,7 @@ int main(int argc, char* argv[]) {
 
     //     server s(io_context, tcp::endpoint(tcp::v4(), port);
     server s(io_context, tcp::endpoint(address, port));
-    std::thread io_thread([&]() { s.run(); });
+    std::thread io_thread([&s]() { s.run(); });
 
     io_context.run();
     io_thread.join();

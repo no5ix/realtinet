@@ -7,7 +7,16 @@
 #include <asio.hpp>
 #include <common/noncopyable.hpp>
 
-class IoCtxHandler() : private common::noncopyable {
+class IoCtxHub() : private common::noncopyable {
+ private:
+  std::vector<std::thread> _threads;
+  std::vector<asio::io_context> _io_contexts;
+  std::vector<asio::executor_work_guard<asio::io_context::executor_type>>
+      _ioc_work_guards;
+
+  std::size_t _thread_size;
+  std::shared_ptr<std::thread> _cur_thread;
+
  public:
   void IoCtxHandler() : thread_size_(std::thread::hardware_concurrency()) {}
 
@@ -38,15 +47,6 @@ class IoCtxHandler() : private common::noncopyable {
 
     for (aut &th : _threads) th.join();
   }
-
- private:
-  std::vector<std::thread> _threads;
-  std::vector<asio::io_context> _io_contexts;
-  std::vector<asio::executor_work_guard<asio::io_context::executor_type>>
-      _ioc_work_guards;
-
-  std::size_t _thread_size;
-  std::shared_ptr<std::thread> _cur_thread;
 }
 
 #endif  // _IO_CTX_HANDLER
