@@ -1,5 +1,5 @@
-#ifndef _IO_CTX_HANDLER
-#define _IO_CTX_HANDLER
+#ifndef REALTINET_CORE_IO_CONTEXT_HUB_HPP
+#define REALTINET_CORE_IO_CONTEXT_HUB_HPP
 
 #include <memory>
 #include <vector>
@@ -7,7 +7,9 @@
 #include <asio.hpp>
 #include <common/noncopyable.hpp>
 
-class IoCtxHub() : private common::noncopyable {
+namespace realtinet {
+
+class IoContextHub() : private common::noncopyable {
  private:
   std::vector<std::thread> _threads;
   std::vector<asio::io_context> _io_contexts;
@@ -16,14 +18,19 @@ class IoCtxHub() : private common::noncopyable {
 
   std::size_t _thread_size;
   std::shared_ptr<std::thread> _cur_thread;
+  std::size_t _next_io_ctx_index;
 
  public:
-  void IoCtxHandler() : thread_size_(std::thread::hardware_concurrency()) {}
+  void IoCtxHandler() : _thread_size(std::thread::hardware_concurrency()) {}
 
-  void set_thread_size(thread_size) { _thread_size = thread_size; }
+  void set_thread_size(std::size_t thread_size) { _thread_size = thread_size; }
 
-  void Start() {
-    _cur_thread.reset([this]() { _Start(); })
+  void Start(){_cur_thread.reset([this]() { _Start(); })}
+
+  asio::io_context& GetIoContext() {
+    ++_next_io_ctx_index;
+    if (_next_io_ctx_index == _thread_size) _next_io_ctx_index = 0;
+    return _io_contexts[_next_io_ctx_index];
   }
 
   void Stop() {
@@ -45,8 +52,10 @@ class IoCtxHub() : private common::noncopyable {
       _threads.emplace_back([this, i]() { _io_contexts[i].run(); })
     }
 
-    for (aut &th : _threads) th.join();
+    for (auto &th : _threads) th.join();
   }
-}
+};
 
-#endif  // _IO_CTX_HANDLER
+}  // namespace realtinet
+
+#endif  // REALTINET_CORE_IO_CONTEXT_HUB_HPP
